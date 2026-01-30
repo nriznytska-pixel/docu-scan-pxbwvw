@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -177,35 +178,75 @@ export default function HomeScreen() {
 
     const uri = pickerResult.assets[0].uri;
     console.log('HomeScreen: Image selected, starting upload process');
+    console.log('HomeScreen: Image URI:', uri);
+    
     setUploading(true);
 
+    const BUCKET_NAME = 'letters';
+    const fileName = `${Date.now()}.jpeg`;
+    const filePath = `public/${fileName}`;
+    let fileSizeBytes = 0;
+
     try {
+      console.log('HomeScreen: Starting image compression');
       const compressedBase64 = await compressImage(uri);
+      
       if (!compressedBase64) {
         console.error('HomeScreen: Failed to compress image');
+        Alert.alert(
+          'Помилка',
+          'Не вдалося стиснути зображення. Спробуйте інше фото.'
+        );
         setUploading(false);
         return;
       }
 
+      fileSizeBytes = Math.round(compressedBase64.length * 0.75);
+      console.log('HomeScreen: File size before upload:', fileSizeBytes, 'bytes');
+      console.log('HomeScreen: Bucket name being used:', BUCKET_NAME);
+      console.log('HomeScreen: File path being used:', filePath);
+
+      console.log('HomeScreen: Starting upload to Supabase Storage');
       const imageUrl = await uploadToSupabase(compressedBase64);
+      
       if (!imageUrl) {
-        console.error('HomeScreen: Failed to upload image');
+        console.error('HomeScreen: Failed to upload image to Supabase Storage');
+        const errorDetails = `Помилка завантаження зображення\n\nРозмір файлу: ${fileSizeBytes} bytes (${(fileSizeBytes / 1024).toFixed(2)} KB)\nБакет: ${BUCKET_NAME}\nШлях: ${filePath}\n\nПеревірте налаштування Supabase Storage та права доступу до бакету.`;
+        Alert.alert('Помилка завантаження', errorDetails);
         setUploading(false);
         return;
       }
 
+      console.log('HomeScreen: Upload successful, saving to database');
       const saved = await saveToDatabase(imageUrl);
+      
       if (!saved) {
         console.error('HomeScreen: Failed to save to database');
+        Alert.alert(
+          'Помилка',
+          'Зображення завантажено, але не вдалося зберегти запис у базі даних.'
+        );
         setUploading(false);
         return;
       }
 
       console.log('HomeScreen: Upload complete, refreshing scans');
+      Alert.alert('Успіх', 'Лист завантажено!');
       await fetchScans();
       setUploading(false);
-    } catch (error) {
-      console.error('HomeScreen: Error in handleImageSelection:', error);
+    } catch (error: any) {
+      console.error('HomeScreen: Error in handleImageSelection');
+      console.error('Upload error details:', JSON.stringify(error, null, 2));
+      console.error('Error message:', error?.message || 'Unknown error');
+      console.error('Error stack:', error?.stack || 'No stack trace');
+      
+      const errorMessage = error?.message || 'Невідома помилка';
+      const errorCode = error?.code || 'N/A';
+      const errorStatus = error?.status || error?.statusCode || 'N/A';
+      
+      const detailedErrorMessage = `Помилка завантаження зображення\n\nПовідомлення: ${errorMessage}\nКод помилки: ${errorCode}\nСтатус: ${errorStatus}\n\nРозмір файлу: ${fileSizeBytes} bytes (${(fileSizeBytes / 1024).toFixed(2)} KB)\nБакет: ${BUCKET_NAME}\nШлях: ${filePath}\n\nПовна інформація про помилку виведена в консоль.`;
+      
+      Alert.alert('Помилка', detailedErrorMessage);
       setUploading(false);
     }
   };
@@ -251,7 +292,7 @@ export default function HomeScreen() {
   };
 
   const viewDocument = (doc: ScannedDocument) => {
-    console.log('HomeScreen: User tapped to view document:', doc.name);
+    console.log('HomeScreen: User tapped to view document:', doc.id);
     setSelectedDocument(doc);
   };
 
