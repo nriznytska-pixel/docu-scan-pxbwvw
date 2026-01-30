@@ -125,7 +125,7 @@ export default function HomeScreen() {
       const filePath = `public/${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('LETTERS')
+        .from('letters')
         .upload(filePath, decode(base64), {
           contentType: `image/${fileExt}`,
           upsert: false,
@@ -137,7 +137,7 @@ export default function HomeScreen() {
       }
 
       const { data: publicUrlData } = supabase.storage
-        .from('LETTERS')
+        .from('letters')
         .getPublicUrl(filePath);
 
       console.log('HomeScreen: Upload successful, URL:', publicUrlData.publicUrl);
