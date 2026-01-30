@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,20 +7,22 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Alert,
   Platform,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { decode } from 'base64-arraybuffer';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import { supabase } from '@/utils/supabase';
 
 interface ScannedDocument {
   id: string;
-  uri: string;
-  name: string;
-  date: string;
+  image_url: string;
+  created_at: string;
 }
 
 export default function HomeScreen() {
@@ -30,6 +32,36 @@ export default function HomeScreen() {
   const [selectedDocument, setSelectedDocument] = useState<ScannedDocument | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    console.log('HomeScreen: Fetching scans from Supabase');
+    fetchScans();
+  }, []);
+
+  const fetchScans = async () => {
+    console.log('HomeScreen: Starting fetchScans');
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('scans')
+        .select('id, image_url, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('HomeScreen: Error fetching scans:', error);
+        return;
+      }
+
+      console.log('HomeScreen: Fetched scans:', data?.length || 0);
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('HomeScreen: Exception fetching scans:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const requestCameraPermission = async () => {
     console.log('HomeScreen: Requesting camera permission');
@@ -37,11 +69,6 @@ export default function HomeScreen() {
     
     if (status !== 'granted') {
       console.log('HomeScreen: Camera permission denied');
-      Alert.alert(
-        'Permission Required',
-        'Camera permission is required to scan documents.',
-        [{ text: 'OK' }]
-      );
       return false;
     }
     
@@ -49,8 +76,142 @@ export default function HomeScreen() {
     return true;
   };
 
+  const compressImage = async (uri: string): Promise<string | null> => {
+    console.log('HomeScreen: Starting image compression');
+    try {
+      let currentCompress = 0.7;
+      let compressedImage = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1000 } }],
+        { compress: currentCompress, format: SaveFormat.JPEG, base64: true }
+      );
+
+      if (!compressedImage.base64) {
+        console.error('HomeScreen: Failed to get base64 from compression');
+        return null;
+      }
+
+      const MAX_SIZE_BYTES = 1 * 1024 * 1024;
+      let currentBase64 = compressedImage.base64;
+
+      while (currentBase64.length * 0.75 > MAX_SIZE_BYTES && currentCompress > 0.1) {
+        console.log('HomeScreen: Image too large, recompressing with quality:', currentCompress - 0.1);
+        currentCompress -= 0.1;
+        const reCompressed = await manipulateAsync(
+          uri,
+          [{ resize: { width: 1000 } }],
+          { compress: currentCompress, format: SaveFormat.JPEG, base64: true }
+        );
+        if (reCompressed.base64) {
+          currentBase64 = reCompressed.base64;
+        } else {
+          break;
+        }
+      }
+
+      console.log('HomeScreen: Image compressed successfully');
+      return currentBase64;
+    } catch (error) {
+      console.error('HomeScreen: Error compressing image:', error);
+      return null;
+    }
+  };
+
+  const uploadToSupabase = async (base64: string): Promise<string | null> => {
+    console.log('HomeScreen: Starting upload to Supabase');
+    try {
+      const fileExt = 'jpeg';
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('LETTERS')
+        .upload(filePath, decode(base64), {
+          contentType: `image/${fileExt}`,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('HomeScreen: Error uploading to Supabase:', uploadError);
+        return null;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('LETTERS')
+        .getPublicUrl(filePath);
+
+      console.log('HomeScreen: Upload successful, URL:', publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('HomeScreen: Exception uploading to Supabase:', error);
+      return null;
+    }
+  };
+
+  const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
+    console.log('HomeScreen: Saving to database');
+    try {
+      const { data: insertData, error: insertError } = await supabase
+        .from('scans')
+        .insert([{ image_url: imageUrl }])
+        .select();
+
+      if (insertError) {
+        console.error('HomeScreen: Error inserting scan record:', insertError);
+        return false;
+      }
+
+      console.log('HomeScreen: Scan record saved successfully');
+      return true;
+    } catch (error) {
+      console.error('HomeScreen: Exception saving to database:', error);
+      return false;
+    }
+  };
+
+  const handleImageSelection = async (pickerResult: ImagePicker.ImagePickerResult) => {
+    if (pickerResult.canceled) {
+      console.log('HomeScreen: Image selection cancelled');
+      return;
+    }
+
+    const uri = pickerResult.assets[0].uri;
+    console.log('HomeScreen: Image selected, starting upload process');
+    setUploading(true);
+
+    try {
+      const compressedBase64 = await compressImage(uri);
+      if (!compressedBase64) {
+        console.error('HomeScreen: Failed to compress image');
+        setUploading(false);
+        return;
+      }
+
+      const imageUrl = await uploadToSupabase(compressedBase64);
+      if (!imageUrl) {
+        console.error('HomeScreen: Failed to upload image');
+        setUploading(false);
+        return;
+      }
+
+      const saved = await saveToDatabase(imageUrl);
+      if (!saved) {
+        console.error('HomeScreen: Failed to save to database');
+        setUploading(false);
+        return;
+      }
+
+      console.log('HomeScreen: Upload complete, refreshing scans');
+      await fetchScans();
+      setUploading(false);
+    } catch (error) {
+      console.error('HomeScreen: Error in handleImageSelection:', error);
+      setUploading(false);
+    }
+  };
+
   const scanDocument = async () => {
-    console.log('HomeScreen: User tapped Scan Document button');
+    console.log('HomeScreen: User tapped Сфотографувати лист button');
     
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
@@ -63,61 +224,29 @@ export default function HomeScreen() {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
-        aspect: [4, 3],
       });
 
       console.log('HomeScreen: Camera result:', result);
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const newDocument: ScannedDocument = {
-          id: Date.now().toString(),
-          uri: asset.uri,
-          name: `Document ${documents.length + 1}`,
-          date: new Date().toLocaleDateString(),
-        };
-
-        console.log('HomeScreen: Adding new document:', newDocument.name);
-        setDocuments([newDocument, ...documents]);
-      } else {
-        console.log('HomeScreen: Camera scan cancelled');
-      }
+      await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen: Error scanning document:', error);
-      Alert.alert('Error', 'Failed to scan document. Please try again.');
     }
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen: User tapped Import from Gallery button');
+    console.log('HomeScreen: User tapped Вибрати з галереї button');
     
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
-        aspect: [4, 3],
       });
 
       console.log('HomeScreen: Gallery result:', result);
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const newDocument: ScannedDocument = {
-          id: Date.now().toString(),
-          uri: asset.uri,
-          name: `Document ${documents.length + 1}`,
-          date: new Date().toLocaleDateString(),
-        };
-
-        console.log('HomeScreen: Adding imported document:', newDocument.name);
-        setDocuments([newDocument, ...documents]);
-      } else {
-        console.log('HomeScreen: Gallery import cancelled');
-      }
+      await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen: Error importing from gallery:', error);
-      Alert.alert('Error', 'Failed to import document. Please try again.');
     }
   };
 
@@ -137,10 +266,25 @@ export default function HomeScreen() {
     setShowDeleteModal(true);
   };
 
-  const deleteDocument = () => {
+  const deleteDocument = async () => {
     if (documentToDelete) {
       console.log('HomeScreen: Deleting document:', documentToDelete);
-      setDocuments(documents.filter(doc => doc.id !== documentToDelete));
+      try {
+        const { error } = await supabase
+          .from('scans')
+          .delete()
+          .eq('id', documentToDelete);
+
+        if (error) {
+          console.error('HomeScreen: Error deleting scan:', error);
+        } else {
+          console.log('HomeScreen: Scan deleted successfully');
+          await fetchScans();
+        }
+      } catch (error) {
+        console.error('HomeScreen: Exception deleting scan:', error);
+      }
+
       setShowDeleteModal(false);
       setDocumentToDelete(null);
       
@@ -156,8 +300,32 @@ export default function HomeScreen() {
     setDocumentToDelete(null);
   };
 
-  const emptyStateText = 'No documents scanned yet';
-  const emptyStateSubtext = 'Tap the button below to scan your first document';
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('uk-UA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const emptyStateText = 'Ще немає сканованих листів';
+  const emptyStateSubtext = 'Натисніть кнопку нижче, щоб сканувати перший лист';
+  const headerTitle = 'Мій Помічник';
+  const scanButtonText = 'Сфотографувати лист';
+  const galleryButtonText = 'Вибрати з галереї';
+  const uploadingText = 'Завантаження...';
+  const documentText = 'Лист';
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -168,10 +336,17 @@ export default function HomeScreen() {
           size={32}
           color={colors.primary}
         />
-        <Text style={styles.headerTitle}>DocuScan</Text>
+        <Text style={styles.headerTitle}>{headerTitle}</Text>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {uploading && (
+          <View style={styles.uploadingBanner}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.uploadingText}>{uploadingText}</Text>
+          </View>
+        )}
+
         {documents.length === 0 ? (
           <View style={styles.emptyState}>
             <IconSymbol
@@ -185,7 +360,9 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.documentsGrid}>
-            {documents.map((doc) => {
+            {documents.map((doc, index) => {
+              const formattedDate = formatDate(doc.created_at);
+              const documentName = `${documentText} ${documents.length - index}`;
               return (
                 <TouchableOpacity
                   key={doc.id}
@@ -193,12 +370,12 @@ export default function HomeScreen() {
                   onPress={() => viewDocument(doc)}
                   activeOpacity={0.7}
                 >
-                  <Image source={{ uri: doc.uri }} style={styles.documentThumbnail} />
+                  <Image source={{ uri: doc.image_url }} style={styles.documentThumbnail} />
                   <View style={styles.documentInfo}>
                     <Text style={styles.documentName} numberOfLines={1}>
-                      {doc.name}
+                      {documentName}
                     </Text>
-                    <Text style={styles.documentDate}>{doc.date}</Text>
+                    <Text style={styles.documentDate}>{formattedDate}</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.deleteButton}
@@ -220,24 +397,34 @@ export default function HomeScreen() {
       </ScrollView>
 
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.primaryButton} onPress={scanDocument} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={[styles.primaryButton, uploading && styles.disabledButton]} 
+          onPress={scanDocument} 
+          activeOpacity={0.8}
+          disabled={uploading}
+        >
           <IconSymbol
             ios_icon_name="camera.fill"
             android_material_icon_name="camera"
             size={24}
             color="#FFFFFF"
           />
-          <Text style={styles.primaryButtonText}>Scan Document</Text>
+          <Text style={styles.primaryButtonText}>{scanButtonText}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={importFromGallery} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={[styles.secondaryButton, uploading && styles.disabledButton]} 
+          onPress={importFromGallery} 
+          activeOpacity={0.8}
+          disabled={uploading}
+        >
           <IconSymbol
             ios_icon_name="photo"
             android_material_icon_name="image"
             size={24}
             color={colors.primary}
           />
-          <Text style={styles.secondaryButtonText}>Import from Gallery</Text>
+          <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
         </TouchableOpacity>
       </View>
 
@@ -258,7 +445,7 @@ export default function HomeScreen() {
                   color={colors.text}
                 />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>{selectedDocument.name}</Text>
+              <Text style={styles.modalTitle}>Перегляд листа</Text>
               <View style={styles.placeholder} />
             </View>
             <ScrollView
@@ -267,7 +454,7 @@ export default function HomeScreen() {
               maximumZoomScale={3}
               minimumZoomScale={1}
             >
-              <Image source={{ uri: selectedDocument.uri }} style={styles.fullImage} resizeMode="contain" />
+              <Image source={{ uri: selectedDocument.image_url }} style={styles.fullImage} resizeMode="contain" />
             </ScrollView>
           </SafeAreaView>
         )}
@@ -281,16 +468,16 @@ export default function HomeScreen() {
       >
         <View style={styles.deleteModalOverlay}>
           <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Delete Document?</Text>
+            <Text style={styles.deleteModalTitle}>Видалити лист?</Text>
             <Text style={styles.deleteModalMessage}>
-              This action cannot be undone.
+              Цю дію не можна скасувати.
             </Text>
             <View style={styles.deleteModalButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={cancelDelete}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Скасувати</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmDeleteButton} onPress={deleteDocument}>
-                <Text style={styles.confirmDeleteButtonText}>Delete</Text>
+                <Text style={styles.confirmDeleteButtonText}>Видалити</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -305,6 +492,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingTop: Platform.OS === 'android' ? 48 : 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  uploadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   header: {
     flexDirection: 'row',

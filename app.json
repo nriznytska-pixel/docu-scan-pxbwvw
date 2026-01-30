@@ -18,8 +18,8 @@
       "bundleIdentifier": "com.anonymous.docuscan",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "DocuScan needs access to your camera to scan documents.",
-        "NSPhotoLibraryUsageDescription": "DocuScan needs access to your photo library to import documents."
+        "NSCameraUsageDescription": "Ця програма потребує доступу до вашої камери для сканування документів.",
+        "NSPhotoLibraryUsageDescription": "Ця програма потребує доступу до вашої фотогалереї для вибору документів."
       }
     },
     "android": {
@@ -46,8 +46,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "DocuScan needs access to your photos to import documents.",
-          "cameraPermission": "DocuScan needs access to your camera to scan documents."
+          "photosPermission": "Дозволити $(PRODUCT_NAME) доступ до ваших фотографій.",
+          "cameraPermission": "Дозволити $(PRODUCT_NAME) доступ до вашої камери."
         }
       ]
     ],
