@@ -150,22 +150,61 @@ export default function HomeScreen() {
   };
 
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
-    console.log('HomeScreen: Saving to database');
+    console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
+    console.log('HomeScreen: Image URL to save:', imageUrl);
+    
+    const dataToInsert = { 
+      image_url: imageUrl,
+      created_at: new Date().toISOString()
+    };
+    
+    console.log('HomeScreen: Data being inserted:');
+    console.log('HomeScreen: - Table: scans');
+    console.log('HomeScreen: - Columns and values:', JSON.stringify(dataToInsert, null, 2));
+    
     try {
       const { data: insertData, error: insertError } = await supabase
         .from('scans')
-        .insert([{ image_url: imageUrl }])
+        .insert([dataToInsert])
         .select();
 
       if (insertError) {
-        console.error('HomeScreen: Error inserting scan record:', insertError);
+        console.error('HomeScreen: ========== INSERT ERROR ==========');
+        console.error('Insert error (full object):', JSON.stringify(insertError, null, 2));
+        console.error('Error message:', insertError.message);
+        console.error('Error code:', insertError.code);
+        console.error('Error details:', insertError.details);
+        console.error('Error hint:', insertError.hint);
+        
+        Alert.alert(
+          'Помилка збереження',
+          `Не вдалося зберегти запис про скан.\n\n` +
+          `Повідомлення: ${insertError.message}\n` +
+          `Код: ${insertError.code || 'N/A'}\n` +
+          `Деталі: ${insertError.details || 'N/A'}\n` +
+          `Підказка: ${insertError.hint || 'N/A'}\n\n` +
+          `Дані для вставки:\n${JSON.stringify(dataToInsert, null, 2)}\n\n` +
+          `Повна інформація виведена в консоль.`
+        );
         return false;
       }
 
-      console.log('HomeScreen: Scan record saved successfully');
+      console.log('HomeScreen: ========== INSERT SUCCESS ==========');
+      console.log('HomeScreen: Inserted data:', JSON.stringify(insertData, null, 2));
       return true;
-    } catch (error) {
-      console.error('HomeScreen: Exception saving to database:', error);
+    } catch (error: any) {
+      console.error('HomeScreen: ========== EXCEPTION SAVING TO DATABASE ==========');
+      console.error('Exception (full object):', JSON.stringify(error, null, 2));
+      console.error('Exception message:', error?.message || 'Unknown error');
+      console.error('Exception stack:', error?.stack || 'No stack trace');
+      
+      Alert.alert(
+        'Помилка збереження',
+        `Виняток при збереженні запису.\n\n` +
+        `Повідомлення: ${error?.message || 'Невідома помилка'}\n\n` +
+        `Дані для вставки:\n${JSON.stringify(dataToInsert, null, 2)}\n\n` +
+        `Повна інформація виведена в консоль.`
+      );
       return false;
     }
   };
