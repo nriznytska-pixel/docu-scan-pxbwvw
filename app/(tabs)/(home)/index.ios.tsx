@@ -11,6 +11,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -86,6 +87,39 @@ export default function HomeScreen() {
       console.error('HomeScreen (iOS): Failed to parse analysis JSON:', e);
       return null;
     }
+  };
+
+  const generateGoogleCalendarUrl = (sender: string, deadline: string, summary: string): string => {
+    console.log('HomeScreen (iOS): Generating Google Calendar URL');
+    console.log('HomeScreen (iOS): Sender:', sender);
+    console.log('HomeScreen (iOS): Deadline:', deadline);
+    console.log('HomeScreen (iOS): Summary:', summary);
+    
+    const title = `Дедлайн: ${sender}`;
+    const formattedDate = `${deadline}/${deadline}`;
+    
+    const encodedTitle = encodeURIComponent(title);
+    const encodedDetails = encodeURIComponent(summary);
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${formattedDate}&details=${encodedDetails}`;
+    
+    console.log('HomeScreen (iOS): Generated calendar URL:', url);
+    return url;
+  };
+
+  const openGoogleCalendar = (sender: string, deadline: string, summary: string) => {
+    console.log('HomeScreen (iOS): User tapped "Додати в календар" button');
+    
+    const calendarUrl = generateGoogleCalendarUrl(sender, deadline, summary);
+    
+    Linking.openURL(calendarUrl)
+      .then(() => {
+        console.log('HomeScreen (iOS): Successfully opened Google Calendar');
+      })
+      .catch((err) => {
+        console.error('HomeScreen (iOS): Failed to open Google Calendar:', err);
+        Alert.alert('Помилка', 'Не вдалося відкрити Google Calendar');
+      });
   };
 
   const fetchScans = async () => {
@@ -555,6 +589,7 @@ export default function HomeScreen() {
           const urgencyWarning = '⚠️ Терміново!';
           const deadlineLabel = '📅 Дедлайн:';
           const amountLabel = '💶 Сума:';
+          const calendarButtonText = '📅 Додати в календар';
           
           return (
             <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
@@ -599,9 +634,22 @@ export default function HomeScreen() {
                     <Text style={styles.summaryText}>{analysis.summary_ua}</Text>
                     
                     {analysis.deadline && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>{deadlineLabel}</Text>
-                        <Text style={styles.detailValue}>{analysis.deadline}</Text>
+                      <View style={styles.deadlineContainer}>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>{deadlineLabel}</Text>
+                          <Text style={styles.detailValue}>{analysis.deadline}</Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.calendarButton}
+                          onPress={() => openGoogleCalendar(
+                            analysis.sender || 'Невідомий відправник',
+                            analysis.deadline!,
+                            analysis.summary_ua || ''
+                          )}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.calendarButtonText}>{calendarButtonText}</Text>
+                        </TouchableOpacity>
                       </View>
                     )}
                     
@@ -886,6 +934,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 16,
   },
+  deadlineContainer: {
+    marginBottom: 12,
+  },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -900,6 +951,23 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 16,
     color: colors.text,
+  },
+  calendarButton: {
+    backgroundColor: '#34C759',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  calendarButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   templatesContainer: {
     marginTop: 16,
