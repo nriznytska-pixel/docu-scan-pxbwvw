@@ -20,10 +20,24 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 
+interface AnalysisData {
+  content: [{ text: string }];
+}
+
+interface ParsedAnalysisContent {
+  sender?: string;
+  summary_ua: string;
+  deadline?: string;
+  amount?: number;
+  urgency?: 'low' | 'medium' | 'high';
+  templates?: string[];
+}
+
 interface ScannedDocument {
   id: string;
   image_url: string;
   created_at: string;
+  analysis?: AnalysisData;
 }
 
 export default function HomeScreen() {
@@ -41,13 +55,31 @@ export default function HomeScreen() {
     fetchScans();
   }, []);
 
+  const parseAnalysis = (analysisJson: AnalysisData | undefined): ParsedAnalysisContent | null => {
+    console.log('HomeScreen: Parsing analysis data:', JSON.stringify(analysisJson, null, 2));
+    
+    try {
+      if (analysisJson && analysisJson.content && analysisJson.content.length > 0 && analysisJson.content[0].text) {
+        const innerJsonString = analysisJson.content[0].text;
+        console.log('HomeScreen: Inner JSON string:', innerJsonString);
+        
+        const parsed = JSON.parse(innerJsonString);
+        console.log('HomeScreen: Successfully parsed analysis:', JSON.stringify(parsed, null, 2));
+        return parsed;
+      }
+    } catch (e) {
+      console.error('HomeScreen: Failed to parse analysis JSON:', e);
+    }
+    return null;
+  };
+
   const fetchScans = async () => {
     console.log('HomeScreen: fetchScans started');
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('scans')
-        .select('id, image_url, created_at')
+        .select('id, image_url, created_at, analysis')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -502,30 +534,71 @@ export default function HomeScreen() {
         transparent={false}
         onRequestClose={closeDocumentView}
       >
-        {selectedDocument && (
-          <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={closeDocumentView} style={styles.closeButton}>
-                <IconSymbol
-                  ios_icon_name="xmark"
-                  android_material_icon_name="close"
-                  size={24}
-                  color={colors.text}
-                />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Перегляд листа</Text>
-              <View style={styles.placeholder} />
-            </View>
-            <ScrollView
-              style={styles.modalScrollView}
-              contentContainerStyle={styles.modalScrollContent}
-              maximumZoomScale={3}
-              minimumZoomScale={1}
-            >
-              <Image source={{ uri: selectedDocument.image_url }} style={styles.fullImage} resizeMode="contain" />
-            </ScrollView>
-          </SafeAreaView>
-        )}
+        {selectedDocument && (() => {
+          const analysis = parseAnalysis(selectedDocument.analysis);
+          const deadlineLabel = '⏰ Дедлайн:';
+          const amountLabel = '💶 Сума:';
+          const urgencyWarning = '⚠️ УВАГА: Висока терміновість!';
+          
+          return (
+            <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={closeDocumentView} style={styles.closeButton}>
+                  <IconSymbol
+                    ios_icon_name="xmark"
+                    android_material_icon_name="close"
+                    size={24}
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Перегляд листа</Text>
+                <View style={styles.placeholder} />
+              </View>
+              <ScrollView
+                style={styles.modalScrollView}
+                contentContainerStyle={styles.modalScrollContent}
+              >
+                <Image source={{ uri: selectedDocument.image_url }} style={styles.fullImage} resizeMode="contain" />
+                
+                {analysis && (
+                  <View style={styles.analysisContainer}>
+                    {analysis.urgency === 'high' && (
+                      <View style={styles.warningBanner}>
+                        <Text style={styles.warningText}>{urgencyWarning}</Text>
+                      </View>
+                    )}
+                    
+                    <Text style={styles.summaryText}>{analysis.summary_ua}</Text>
+                    
+                    {analysis.deadline && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{deadlineLabel}</Text>
+                        <Text style={styles.detailValue}>{analysis.deadline}</Text>
+                      </View>
+                    )}
+                    
+                    {analysis.amount !== undefined && analysis.amount !== null && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{amountLabel}</Text>
+                        <Text style={styles.detailValue}>{analysis.amount}</Text>
+                      </View>
+                    )}
+                    
+                    {analysis.templates && analysis.templates.length > 0 && (
+                      <View style={styles.templatesContainer}>
+                        {analysis.templates.map((template, index) => (
+                          <TouchableOpacity key={index} style={styles.templateButton}>
+                            <Text style={styles.templateButtonText}>{template}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+              </ScrollView>
+            </SafeAreaView>
+          );
+        })()}
       </Modal>
 
       <Modal
@@ -754,12 +827,65 @@ const styles = StyleSheet.create({
   },
   modalScrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   fullImage: {
     width: '100%',
-    height: '100%',
+    height: 400,
+    backgroundColor: colors.background,
+  },
+  analysisContainer: {
+    padding: 20,
+    backgroundColor: colors.backgroundAlt,
+  },
+  warningBanner: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  warningText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  summaryText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+    marginBottom: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginRight: 8,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  templatesContainer: {
+    marginTop: 16,
+    gap: 12,
+  },
+  templateButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  templateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   deleteModalOverlay: {
     flex: 1,
