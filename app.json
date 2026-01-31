@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DocuScan",
-    "slug": "docuscan",
+    "name": "Docu Scan",
+    "slug": "Docu Scan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -50,7 +50,7 @@
         }
       ]
     ],
-    "scheme": "docuscan",
+    "scheme": "Docu Scan",
     "experiments": {
       "typedRoutes": true
     },
