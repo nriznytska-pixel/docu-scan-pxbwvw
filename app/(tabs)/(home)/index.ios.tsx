@@ -27,7 +27,7 @@ interface ScannedDocument {
 }
 
 export default function HomeScreen() {
-  console.log('HomeScreen: Component rendered');
+  console.log('HomeScreen (iOS): Component rendered');
   
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<ScannedDocument | null>(null);
@@ -37,12 +37,12 @@ export default function HomeScreen() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    console.log('HomeScreen: Initial load - fetching scans');
+    console.log('HomeScreen (iOS): Initial load - fetching scans');
     fetchScans();
   }, []);
 
   const fetchScans = async () => {
-    console.log('HomeScreen: fetchScans started');
+    console.log('HomeScreen (iOS): fetchScans started');
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -51,26 +51,26 @@ export default function HomeScreen() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('HomeScreen: Error fetching scans:', JSON.stringify(error, null, 2));
+        console.error('HomeScreen (iOS): Error fetching scans:', JSON.stringify(error, null, 2));
         return;
       }
 
       const scansCount = data?.length || 0;
-      console.log('HomeScreen: Successfully fetched scans, count:', scansCount);
+      console.log('HomeScreen (iOS): Successfully fetched scans, count:', scansCount);
       setDocuments(data || []);
     } catch (error) {
-      console.error('HomeScreen: Exception in fetchScans:', error);
+      console.error('HomeScreen (iOS): Exception in fetchScans:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const requestCameraPermission = async () => {
-    console.log('HomeScreen: Requesting camera permission');
+    console.log('HomeScreen (iOS): Requesting camera permission');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('HomeScreen: Camera permission denied');
+      console.log('HomeScreen (iOS): Camera permission denied');
       Alert.alert(
         'Дозвіл потрібен',
         'Будь ласка, надайте доступ до камери для сканування документів.'
@@ -78,12 +78,12 @@ export default function HomeScreen() {
       return false;
     }
     
-    console.log('HomeScreen: Camera permission granted');
+    console.log('HomeScreen (iOS): Camera permission granted');
     return true;
   };
 
   const compressImage = async (uri: string): Promise<string | null> => {
-    console.log('HomeScreen: Starting image compression for URI:', uri);
+    console.log('HomeScreen (iOS): Starting image compression for URI:', uri);
     try {
       let currentCompress = 0.8;
       let compressedImage = await manipulateAsync(
@@ -93,7 +93,7 @@ export default function HomeScreen() {
       );
 
       if (!compressedImage.base64) {
-        console.error('HomeScreen: No base64 data from compression');
+        console.error('HomeScreen (iOS): No base64 data from compression');
         return null;
       }
 
@@ -101,11 +101,11 @@ export default function HomeScreen() {
       let currentBase64 = compressedImage.base64;
       let estimatedSize = currentBase64.length * 0.75;
 
-      console.log('HomeScreen: Initial compressed size:', Math.round(estimatedSize), 'bytes');
+      console.log('HomeScreen (iOS): Initial compressed size:', Math.round(estimatedSize), 'bytes');
 
       while (estimatedSize > MAX_SIZE_BYTES && currentCompress > 0.1) {
         currentCompress -= 0.1;
-        console.log('HomeScreen: Recompressing with quality:', currentCompress.toFixed(1));
+        console.log('HomeScreen (iOS): Recompressing with quality:', currentCompress.toFixed(1));
         
         const reCompressed = await manipulateAsync(
           uri,
@@ -116,29 +116,29 @@ export default function HomeScreen() {
         if (reCompressed.base64) {
           currentBase64 = reCompressed.base64;
           estimatedSize = currentBase64.length * 0.75;
-          console.log('HomeScreen: New size:', Math.round(estimatedSize), 'bytes');
+          console.log('HomeScreen (iOS): New size:', Math.round(estimatedSize), 'bytes');
         } else {
           break;
         }
       }
 
       const finalSize = Math.round(estimatedSize);
-      console.log('HomeScreen: Compression complete, final size:', finalSize, 'bytes');
+      console.log('HomeScreen (iOS): Compression complete, final size:', finalSize, 'bytes');
       return currentBase64;
     } catch (error) {
-      console.error('HomeScreen: Error in compressImage:', error);
+      console.error('HomeScreen (iOS): Error in compressImage:', error);
       return null;
     }
   };
 
   const uploadToSupabase = async (base64: string): Promise<string | null> => {
-    console.log('HomeScreen: Starting Supabase upload');
+    console.log('HomeScreen (iOS): Starting Supabase upload');
     try {
       const fileExt = 'jpeg';
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `public/${fileName}`;
 
-      console.log('HomeScreen: Uploading to bucket "letters", path:', filePath);
+      console.log('HomeScreen (iOS): Uploading to bucket "letters", path:', filePath);
 
       const arrayBuffer = decode(base64);
       
@@ -150,35 +150,35 @@ export default function HomeScreen() {
         });
 
       if (uploadError) {
-        console.error('HomeScreen: Upload error:', JSON.stringify(uploadError, null, 2));
+        console.error('HomeScreen (iOS): Upload error:', JSON.stringify(uploadError, null, 2));
         return null;
       }
 
-      console.log('HomeScreen: Upload successful, getting public URL');
+      console.log('HomeScreen (iOS): Upload successful, getting public URL');
 
       const { data: publicUrlData } = supabase.storage
         .from('letters')
         .getPublicUrl(filePath);
 
       const publicUrl = publicUrlData.publicUrl;
-      console.log('HomeScreen: Public URL obtained:', publicUrl);
+      console.log('HomeScreen (iOS): Public URL obtained:', publicUrl);
       return publicUrl;
     } catch (error) {
-      console.error('HomeScreen: Exception in uploadToSupabase:', error);
+      console.error('HomeScreen (iOS): Exception in uploadToSupabase:', error);
       return null;
     }
   };
 
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
-    console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
-    console.log('HomeScreen: Image URL:', imageUrl);
+    console.log('HomeScreen (iOS): ========== SAVING TO DATABASE ==========');
+    console.log('HomeScreen (iOS): Image URL:', imageUrl);
     
     const dataToInsert = { 
       image_url: imageUrl,
       created_at: new Date().toISOString()
     };
     
-    console.log('HomeScreen: Inserting into "scans" table:', JSON.stringify(dataToInsert, null, 2));
+    console.log('HomeScreen (iOS): Inserting into "scans" table:', JSON.stringify(dataToInsert, null, 2));
     
     try {
       const { data: insertData, error: insertError } = await supabase
@@ -187,7 +187,7 @@ export default function HomeScreen() {
         .select();
 
       if (insertError) {
-        console.error('HomeScreen: ========== INSERT ERROR ==========');
+        console.error('HomeScreen (iOS): ========== INSERT ERROR ==========');
         console.error('Full error:', JSON.stringify(insertError, null, 2));
         console.error('Message:', insertError.message);
         console.error('Code:', insertError.code);
@@ -201,11 +201,11 @@ export default function HomeScreen() {
         return false;
       }
 
-      console.log('HomeScreen: ========== INSERT SUCCESS ==========');
-      console.log('HomeScreen: Inserted data:', JSON.stringify(insertData, null, 2));
+      console.log('HomeScreen (iOS): ========== INSERT SUCCESS ==========');
+      console.log('HomeScreen (iOS): Inserted data:', JSON.stringify(insertData, null, 2));
       return true;
     } catch (error: any) {
-      console.error('HomeScreen: ========== EXCEPTION IN SAVE ==========');
+      console.error('HomeScreen (iOS): ========== EXCEPTION IN SAVE ==========');
       console.error('Exception:', JSON.stringify(error, null, 2));
       
       Alert.alert(
@@ -218,54 +218,54 @@ export default function HomeScreen() {
 
   const handleImageSelection = async (pickerResult: ImagePicker.ImagePickerResult) => {
     if (pickerResult.canceled) {
-      console.log('HomeScreen: Image selection cancelled by user');
+      console.log('HomeScreen (iOS): Image selection cancelled by user');
       return;
     }
 
     const uri = pickerResult.assets[0].uri;
-    console.log('HomeScreen: ========== STARTING IMAGE UPLOAD PROCESS ==========');
-    console.log('HomeScreen: Selected image URI:', uri);
+    console.log('HomeScreen (iOS): ========== STARTING IMAGE UPLOAD PROCESS ==========');
+    console.log('HomeScreen (iOS): Selected image URI:', uri);
     
     setUploading(true);
 
     try {
-      console.log('HomeScreen: Step 1 - Compressing image');
+      console.log('HomeScreen (iOS): Step 1 - Compressing image');
       const compressedBase64 = await compressImage(uri);
       
       if (!compressedBase64) {
-        console.error('HomeScreen: Compression failed');
+        console.error('HomeScreen (iOS): Compression failed');
         Alert.alert('Помилка', 'Не вдалося стиснути зображення.');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen: Step 2 - Uploading to Supabase Storage');
+      console.log('HomeScreen (iOS): Step 2 - Uploading to Supabase Storage');
       const imageUrl = await uploadToSupabase(compressedBase64);
       
       if (!imageUrl) {
-        console.error('HomeScreen: Upload to storage failed');
+        console.error('HomeScreen (iOS): Upload to storage failed');
         Alert.alert('Помилка', 'Не вдалося завантажити зображення до сховища.');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen: Step 3 - Saving to database');
+      console.log('HomeScreen (iOS): Step 3 - Saving to database');
       const saved = await saveToDatabase(imageUrl);
       
       if (!saved) {
-        console.error('HomeScreen: Database save failed');
+        console.error('HomeScreen (iOS): Database save failed');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen: ========== UPLOAD COMPLETE ==========');
+      console.log('HomeScreen (iOS): ========== UPLOAD COMPLETE ==========');
       Alert.alert('Успіх', 'Лист успішно завантажено!');
       
-      console.log('HomeScreen: Refreshing scans list');
+      console.log('HomeScreen (iOS): Refreshing scans list');
       await fetchScans();
       setUploading(false);
     } catch (error: any) {
-      console.error('HomeScreen: ========== UPLOAD PROCESS ERROR ==========');
+      console.error('HomeScreen (iOS): ========== UPLOAD PROCESS ERROR ==========');
       console.error('Error:', JSON.stringify(error, null, 2));
       
       Alert.alert(
@@ -277,14 +277,14 @@ export default function HomeScreen() {
   };
 
   const scanDocument = async () => {
-    console.log('HomeScreen: User tapped "Сфотографувати лист"');
+    console.log('HomeScreen (iOS): User tapped "Сфотографувати лист"');
     
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
       return;
     }
 
-    console.log('HomeScreen: Launching camera');
+    console.log('HomeScreen (iOS): Launching camera');
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -294,12 +294,12 @@ export default function HomeScreen() {
 
       await handleImageSelection(result);
     } catch (error) {
-      console.error('HomeScreen: Error launching camera:', error);
+      console.error('HomeScreen (iOS): Error launching camera:', error);
     }
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen: User tapped "Вибрати з галереї"');
+    console.log('HomeScreen (iOS): User tapped "Вибрати з галереї"');
     
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -310,22 +310,22 @@ export default function HomeScreen() {
 
       await handleImageSelection(result);
     } catch (error) {
-      console.error('HomeScreen: Error launching gallery:', error);
+      console.error('HomeScreen (iOS): Error launching gallery:', error);
     }
   };
 
   const viewDocument = (doc: ScannedDocument) => {
-    console.log('HomeScreen: Opening document view for ID:', doc.id);
+    console.log('HomeScreen (iOS): Opening document view for ID:', doc.id);
     setSelectedDocument(doc);
   };
 
   const closeDocumentView = () => {
-    console.log('HomeScreen: Closing document view');
+    console.log('HomeScreen (iOS): Closing document view');
     setSelectedDocument(null);
   };
 
   const confirmDeleteDocument = (docId: string) => {
-    console.log('HomeScreen: User requested delete for document ID:', docId);
+    console.log('HomeScreen (iOS): User requested delete for document ID:', docId);
     setDocumentToDelete(docId);
     setShowDeleteModal(true);
   };
@@ -335,7 +335,7 @@ export default function HomeScreen() {
       return;
     }
 
-    console.log('HomeScreen: Deleting document ID:', documentToDelete);
+    console.log('HomeScreen (iOS): Deleting document ID:', documentToDelete);
     
     try {
       const { error } = await supabase
@@ -344,14 +344,14 @@ export default function HomeScreen() {
         .eq('id', documentToDelete);
 
       if (error) {
-        console.error('HomeScreen: Delete error:', JSON.stringify(error, null, 2));
+        console.error('HomeScreen (iOS): Delete error:', JSON.stringify(error, null, 2));
         Alert.alert('Помилка', 'Не вдалося видалити лист.');
       } else {
-        console.log('HomeScreen: Document deleted successfully');
+        console.log('HomeScreen (iOS): Document deleted successfully');
         await fetchScans();
       }
     } catch (error) {
-      console.error('HomeScreen: Exception deleting document:', error);
+      console.error('HomeScreen (iOS): Exception deleting document:', error);
     }
 
     setShowDeleteModal(false);
@@ -363,7 +363,7 @@ export default function HomeScreen() {
   };
 
   const cancelDelete = () => {
-    console.log('HomeScreen: Delete cancelled');
+    console.log('HomeScreen (iOS): Delete cancelled');
     setShowDeleteModal(false);
     setDocumentToDelete(null);
   };
@@ -559,7 +559,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   loadingContainer: {
     flex: 1,
@@ -641,7 +640,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -672,7 +670,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundAlt,
     borderRadius: 20,
     padding: 8,
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -693,7 +690,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     marginBottom: 12,
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -774,7 +770,6 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
