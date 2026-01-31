@@ -58,19 +58,34 @@ export default function HomeScreen() {
   const parseAnalysis = (analysisJson: AnalysisData | undefined): ParsedAnalysisContent | null => {
     console.log('HomeScreen (iOS): Parsing analysis data:', JSON.stringify(analysisJson, null, 2));
     
+    if (!analysisJson || !analysisJson.content || analysisJson.content.length === 0) {
+      console.log('HomeScreen (iOS): No analysis data available');
+      return null;
+    }
+
     try {
-      if (analysisJson && analysisJson.content && analysisJson.content.length > 0 && analysisJson.content[0].text) {
-        const innerJsonString = analysisJson.content[0].text;
-        console.log('HomeScreen (iOS): Inner JSON string:', innerJsonString);
-        
-        const parsed = JSON.parse(innerJsonString);
-        console.log('HomeScreen (iOS): Successfully parsed analysis:', JSON.stringify(parsed, null, 2));
-        return parsed;
+      const textContent = analysisJson.content[0].text;
+      console.log('HomeScreen (iOS): Raw text content:', textContent);
+      
+      // Extract JSON from markdown code block (```json ... ```)
+      const jsonMatch = textContent.match(/```json\s*([\s\S]*?)\s*```/);
+      
+      let jsonString = textContent;
+      if (jsonMatch && jsonMatch[1]) {
+        jsonString = jsonMatch[1].trim();
+        console.log('HomeScreen (iOS): Extracted JSON from markdown wrapper');
+      } else {
+        console.log('HomeScreen (iOS): No markdown wrapper found, parsing as-is');
       }
+      
+      console.log('HomeScreen (iOS): JSON string to parse:', jsonString);
+      const parsed = JSON.parse(jsonString);
+      console.log('HomeScreen (iOS): Successfully parsed analysis:', JSON.stringify(parsed, null, 2));
+      return parsed;
     } catch (e) {
       console.error('HomeScreen (iOS): Failed to parse analysis JSON:', e);
+      return null;
     }
-    return null;
   };
 
   const fetchScans = async () => {
@@ -536,9 +551,10 @@ export default function HomeScreen() {
       >
         {selectedDocument && (() => {
           const analysis = parseAnalysis(selectedDocument.analysis);
-          const deadlineLabel = '⏰ Дедлайн:';
+          const analyzingText = '⏳ Аналізується...';
+          const urgencyWarning = '⚠️ Терміново!';
+          const deadlineLabel = '📅 Дедлайн:';
           const amountLabel = '💶 Сума:';
-          const urgencyWarning = '⚠️ УВАГА: Висока терміновість!';
           
           return (
             <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
@@ -559,6 +575,18 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.modalScrollContent}
               >
                 <Image source={{ uri: selectedDocument.image_url }} style={styles.fullImage} resizeMode="contain" />
+                
+                {!selectedDocument.analysis && (
+                  <View style={styles.analysisContainer}>
+                    <Text style={styles.analyzingText}>{analyzingText}</Text>
+                  </View>
+                )}
+                
+                {selectedDocument.analysis && !analysis && (
+                  <View style={styles.analysisContainer}>
+                    <Text style={styles.analyzingText}>{analyzingText}</Text>
+                  </View>
+                )}
                 
                 {analysis && (
                   <View style={styles.analysisContainer}>
@@ -832,6 +860,12 @@ const styles = StyleSheet.create({
   analysisContainer: {
     padding: 20,
     backgroundColor: colors.backgroundAlt,
+  },
+  analyzingText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   warningBanner: {
     backgroundColor: '#FF3B30',
