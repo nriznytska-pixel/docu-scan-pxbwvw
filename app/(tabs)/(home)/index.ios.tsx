@@ -34,6 +34,7 @@ interface ParsedAnalysisContent {
   amount?: number;
   urgency?: 'low' | 'medium' | 'high';
   templates?: string[];
+  steps?: string[];
 }
 
 interface ScannedDocument {
@@ -714,6 +715,7 @@ export default function HomeScreen() {
           const deadlineLabel = '📅 Дедлайн:';
           const amountLabel = '💶 Сума:';
           const calendarButtonText = '📅 Додати в календар';
+          const stepsTitle = '📋 Що робити:';
           const replyButtonText = '✍️ Відповісти';
           
           return (
@@ -812,6 +814,25 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                           );
                         })}
+                      </View>
+                    )}
+                    
+                    {analysis.steps && analysis.steps.length > 0 && (
+                      <View style={styles.stepsCard}>
+                        <Text style={styles.stepsTitle}>{stepsTitle}</Text>
+                        <View style={styles.stepsList}>
+                          {analysis.steps.map((step, index) => {
+                            const stepNumber = `${index + 1}.`;
+                            const checkboxIcon = '☐';
+                            return (
+                              <View key={index} style={styles.stepItem}>
+                                <Text style={styles.stepNumber}>{stepNumber}</Text>
+                                <Text style={styles.stepCheckbox}>{checkboxIcon}</Text>
+                                <Text style={styles.stepText}>{step}</Text>
+                              </View>
+                            );
+                          })}
+                        </View>
                       </View>
                     )}
                     
@@ -1213,6 +1234,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  stepsCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  stepsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  stepsList: {
+    gap: 12,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  stepNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginRight: 8,
+    minWidth: 24,
+  },
+  stepCheckbox: {
+    fontSize: 16,
+    color: colors.text,
+    marginRight: 8,
+  },
+  stepText: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+    lineHeight: 22,
   },
   replyButtonContainer: {
     marginTop: 16,
