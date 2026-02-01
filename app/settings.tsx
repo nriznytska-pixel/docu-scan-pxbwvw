@@ -20,9 +20,16 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
 
+  console.log('SettingsScreen: 🔍 Current selectedLanguage:', selectedLanguage);
+
   const handleLanguageSelect = async (code: string) => {
-    console.log('SettingsScreen: User selected language:', code);
+    console.log('SettingsScreen: 🔍 CRITICAL - User selected language:', code);
+    console.log('SettingsScreen: 🔍 CRITICAL - Code type:', typeof code);
+    console.log('SettingsScreen: 🔍 CRITICAL - Previous language was:', selectedLanguage);
+    
     await setSelectedLanguage(code);
+    
+    console.log('SettingsScreen: ✅ setSelectedLanguage call completed');
   };
 
   const screenTitle = '⚙️ Налаштування';
@@ -49,6 +56,8 @@ export default function SettingsScreen() {
               {LANGUAGES.map((language) => {
                 const isSelected = selectedLanguage === language.code;
                 const languageDisplay = `${language.emoji} ${language.label}`;
+                
+                console.log(`SettingsScreen: Language ${language.code} - isSelected: ${isSelected}`);
                 
                 return (
                   <TouchableOpacity

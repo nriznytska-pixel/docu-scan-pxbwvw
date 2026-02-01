@@ -35,34 +35,72 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('LanguageContext: Loading saved language from storage');
+    console.log('LanguageContext: 🔄 Initializing - Loading saved language from storage');
     loadSavedLanguage();
   }, []);
 
   const loadSavedLanguage = async () => {
     try {
       const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      console.log('LanguageContext: 🔍 Raw value from AsyncStorage:', savedLanguage);
+      
       if (savedLanguage) {
-        console.log('LanguageContext: Loaded language from storage:', savedLanguage);
-        setSelectedLanguageState(savedLanguage);
+        // Validate that it's a valid language code
+        const validCodes = LANGUAGES.map(lang => lang.code);
+        if (validCodes.includes(savedLanguage)) {
+          console.log('LanguageContext: ✅ Valid language loaded from storage:', savedLanguage);
+          setSelectedLanguageState(savedLanguage);
+        } else {
+          console.error('LanguageContext: ⚠️ Invalid language code in storage:', savedLanguage);
+          console.log('LanguageContext: Resetting to default: uk');
+          await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, 'uk');
+          setSelectedLanguageState('uk');
+        }
       } else {
-        console.log('LanguageContext: No saved language, using default: uk');
+        console.log('LanguageContext: No saved language found, setting default: uk');
+        await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, 'uk');
+        setSelectedLanguageState('uk');
       }
     } catch (error) {
-      console.error('LanguageContext: Error loading language from storage:', error);
+      console.error('LanguageContext: ❌ Error loading language from storage:', error);
+      setSelectedLanguageState('uk');
     } finally {
       setIsLoading(false);
+      console.log('LanguageContext: ✅ Initialization complete');
     }
   };
 
   const setSelectedLanguage = async (code: string) => {
-    console.log('LanguageContext: Setting language to:', code);
+    console.log('LanguageContext: 🔍 CRITICAL - setSelectedLanguage called with:', code);
+    console.log('LanguageContext: 🔍 CRITICAL - Code type:', typeof code);
+    
+    // Validate that the code is one of the valid language codes
+    const validCodes = LANGUAGES.map(lang => lang.code);
+    if (!validCodes.includes(code)) {
+      console.error('LanguageContext: ⚠️ WARNING - Invalid language code:', code);
+      console.error('LanguageContext: Valid codes are:', validCodes.join(', '));
+      return;
+    }
+    
     try {
+      console.log('LanguageContext: 💾 Saving to AsyncStorage:', code);
       await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, code);
+      
+      console.log('LanguageContext: 🔄 Updating state to:', code);
       setSelectedLanguageState(code);
-      console.log('LanguageContext: Language saved successfully');
+      
+      // Verify it was saved
+      const verification = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      console.log('LanguageContext: ✅ Verification - Language in storage:', verification);
+      
+      if (verification !== code) {
+        console.error('LanguageContext: ⚠️ WARNING - Verification failed!');
+        console.error('LanguageContext: Expected:', code, 'Got:', verification);
+      } else {
+        console.log('LanguageContext: ✅ Language saved and verified successfully');
+      }
     } catch (error) {
-      console.error('LanguageContext: Error saving language to storage:', error);
+      console.error('LanguageContext: ❌ Error saving language to storage:', error);
     }
   };
 
@@ -72,9 +110,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return label;
   };
 
+  // Log current language state whenever it changes
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('LanguageContext: 🔍 Current selectedLanguage state:', selectedLanguage);
+    }
+  }, [selectedLanguage, isLoading]);
+
   if (isLoading) {
+    console.log('LanguageContext: ⏳ Still loading...');
     return null;
   }
+
+  console.log('LanguageContext: ✅ Provider rendering with language:', selectedLanguage);
 
   return (
     <LanguageContext.Provider value={{ selectedLanguage, setSelectedLanguage, getLanguageLabel }}>
