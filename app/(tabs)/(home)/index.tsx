@@ -714,6 +714,7 @@ export default function HomeScreen() {
           const deadlineLabel = '📅 Дедлайн:';
           const amountLabel = '💶 Сума:';
           const calendarButtonText = '📅 Додати в календар';
+          const replyButtonText = '✍️ Відповісти';
           
           return (
             <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
@@ -813,6 +814,16 @@ export default function HomeScreen() {
                         })}
                       </View>
                     )}
+                    
+                    <View style={styles.replyButtonContainer}>
+                      <TouchableOpacity 
+                        style={styles.replyButton}
+                        onPress={() => handleTemplatePress('reply', analysis)}
+                        disabled={generatingResponse}
+                      >
+                        <Text style={styles.replyButtonText}>{replyButtonText}</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </ScrollView>
@@ -1204,6 +1215,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   templateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  replyButtonContainer: {
+    marginTop: 16,
+  },
+  replyButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  replyButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
