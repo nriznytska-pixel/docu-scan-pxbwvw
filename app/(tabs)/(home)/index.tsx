@@ -62,6 +62,9 @@ export default function HomeScreen() {
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
   
+  // Log the current language whenever component renders
+  console.log('HomeScreen: Current selectedLanguage from context:', selectedLanguage);
+  
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<ScannedDocument | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -285,6 +288,15 @@ export default function HomeScreen() {
 
       const scansCount = data?.length || 0;
       console.log('HomeScreen: Successfully fetched scans, count:', scansCount);
+      
+      // Log the language of each scan for debugging
+      if (data && data.length > 0) {
+        console.log('HomeScreen: Recent scans with languages:');
+        data.slice(0, 3).forEach((scan, index) => {
+          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}"`);
+        });
+      }
+      
       setDocuments(data || []);
     } catch (error) {
       console.error('HomeScreen: Exception in fetchScans:', error);
@@ -400,7 +412,8 @@ export default function HomeScreen() {
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
     console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
     console.log('HomeScreen: Image URL:', imageUrl);
-    console.log('HomeScreen: Selected language:', selectedLanguage);
+    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage value at save time:', selectedLanguage);
+    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage type:', typeof selectedLanguage);
     
     const dataToInsert = { 
       image_url: imageUrl,
@@ -408,7 +421,7 @@ export default function HomeScreen() {
       language: selectedLanguage,
     };
     
-    console.log('HomeScreen: Inserting into "scans" table:', JSON.stringify(dataToInsert, null, 2));
+    console.log('HomeScreen: 🔍 CRITICAL - Full data object to insert:', JSON.stringify(dataToInsert, null, 2));
     
     try {
       // Save to Supabase (for image storage and analysis)
@@ -433,7 +446,20 @@ export default function HomeScreen() {
       }
 
       console.log('HomeScreen: ========== INSERT SUCCESS ==========');
-      console.log('HomeScreen: Inserted data:', JSON.stringify(insertData, null, 2));
+      console.log('HomeScreen: 🔍 CRITICAL - Data returned from Supabase:', JSON.stringify(insertData, null, 2));
+      
+      // Verify the language was saved correctly
+      if (insertData && insertData.length > 0) {
+        const savedLanguage = insertData[0].language;
+        console.log('HomeScreen: 🔍 CRITICAL - Language saved in database:', savedLanguage);
+        if (savedLanguage !== selectedLanguage) {
+          console.error('HomeScreen: ⚠️ WARNING - Language mismatch!');
+          console.error(`  Expected: "${selectedLanguage}"`);
+          console.error(`  Got: "${savedLanguage}"`);
+        } else {
+          console.log('HomeScreen: ✅ Language saved correctly!');
+        }
+      }
       
       // Also create a scan record in the backend API with the language
       console.log('HomeScreen: Creating scan record in backend API');
@@ -441,6 +467,7 @@ export default function HomeScreen() {
       
       if (backendUrl) {
         try {
+          console.log('HomeScreen: 🔍 Sending language to backend:', selectedLanguage);
           const backendResponse = await fetch(`${backendUrl}/scans`, {
             method: 'POST',
             headers: {
@@ -485,6 +512,7 @@ export default function HomeScreen() {
     const uri = pickerResult.assets[0].uri;
     console.log('HomeScreen: ========== STARTING IMAGE UPLOAD PROCESS ==========');
     console.log('HomeScreen: Selected image URI:', uri);
+    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage at start of upload:', selectedLanguage);
     
     setUploading(true);
 
@@ -510,6 +538,7 @@ export default function HomeScreen() {
       }
 
       console.log('HomeScreen: Step 3 - Saving to database');
+      console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage before saveToDatabase call:', selectedLanguage);
       const saved = await saveToDatabase(imageUrl);
       
       if (!saved) {
@@ -538,6 +567,7 @@ export default function HomeScreen() {
 
   const scanDocument = async () => {
     console.log('HomeScreen: User tapped "Сфотографувати лист"');
+    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
     
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
@@ -560,6 +590,7 @@ export default function HomeScreen() {
 
   const importFromGallery = async () => {
     console.log('HomeScreen: User tapped "Вибрати з галереї"');
+    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
     
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -576,6 +607,7 @@ export default function HomeScreen() {
 
   const viewDocument = (doc: ScannedDocument) => {
     console.log('HomeScreen: Opening document view for ID:', doc.id);
+    console.log('HomeScreen: Document language:', doc.language || 'null');
     setSelectedDocument(doc);
     setDetailImageError(false);
   };
