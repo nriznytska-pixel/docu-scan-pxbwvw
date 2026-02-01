@@ -18,9 +18,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { decode } from 'base64-arraybuffer';
+import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AnalysisData {
   content: [{ text: string }];
@@ -42,6 +44,7 @@ interface ScannedDocument {
   image_url: string;
   created_at: string;
   analysis?: AnalysisData;
+  language?: string;
 }
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -54,6 +57,9 @@ const TEMPLATE_LABELS: Record<string, string> = {
 
 export default function HomeScreen() {
   console.log('HomeScreen (iOS): Component rendered');
+  
+  const router = useRouter();
+  const { selectedLanguage } = useLanguage();
   
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<ScannedDocument | null>(null);
@@ -238,7 +244,7 @@ export default function HomeScreen() {
     try {
       const { data, error } = await supabase
         .from('scans')
-        .select('id, image_url, created_at, analysis')
+        .select('id, image_url, created_at, analysis, language')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -363,10 +369,12 @@ export default function HomeScreen() {
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
     console.log('HomeScreen (iOS): ========== SAVING TO DATABASE ==========');
     console.log('HomeScreen (iOS): Image URL:', imageUrl);
+    console.log('HomeScreen (iOS): Selected language:', selectedLanguage);
     
     const dataToInsert = { 
       image_url: imageUrl,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      language: selectedLanguage,
     };
     
     console.log('HomeScreen (iOS): Inserting into "scans" table:', JSON.stringify(dataToInsert, null, 2));
@@ -570,6 +578,11 @@ export default function HomeScreen() {
     });
   };
 
+  const openSettings = () => {
+    console.log('HomeScreen (iOS): User tapped settings button');
+    router.push('/settings');
+  };
+
   const emptyStateText = 'Ще немає сканованих листів';
   const emptyStateSubtext = 'Натисніть кнопку нижче, щоб додати перший лист';
   const headerTitle = 'Мій Помічник';
@@ -592,13 +605,27 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <IconSymbol
-          ios_icon_name="doc.text.fill"
-          android_material_icon_name="description"
-          size={32}
-          color={colors.primary}
-        />
-        <Text style={styles.headerTitle}>{headerTitle}</Text>
+        <View style={styles.headerLeft}>
+          <IconSymbol
+            ios_icon_name="doc.text.fill"
+            android_material_icon_name="description"
+            size={32}
+            color={colors.primary}
+          />
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={openSettings}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <IconSymbol
+            ios_icon_name="gear"
+            android_material_icon_name="settings"
+            size={28}
+            color={colors.text}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -958,18 +985,26 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 20,
     backgroundColor: colors.backgroundAlt,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
     marginLeft: 12,
+  },
+  settingsButton: {
+    padding: 8,
   },
   scrollView: {
     flex: 1,

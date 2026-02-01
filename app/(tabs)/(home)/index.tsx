@@ -18,9 +18,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { decode } from 'base64-arraybuffer';
+import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
+import { useLanguage } from '@/contexts/LanguageContext';
+import Constants from 'expo-constants';
 
 interface AnalysisData {
   content: [{ text: string }];
@@ -42,6 +45,7 @@ interface ScannedDocument {
   image_url: string;
   created_at: string;
   analysis?: AnalysisData;
+  language?: string;
 }
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -54,6 +58,9 @@ const TEMPLATE_LABELS: Record<string, string> = {
 
 export default function HomeScreen() {
   console.log('HomeScreen: Component rendered');
+  
+  const router = useRouter();
+  const { selectedLanguage } = useLanguage();
   
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<ScannedDocument | null>(null);
@@ -70,7 +77,37 @@ export default function HomeScreen() {
   useEffect(() => {
     console.log('HomeScreen: Initial load - fetching scans');
     fetchScans();
+    
+    // Test backend API connection
+    testBackendConnection();
   }, []);
+
+  const testBackendConnection = async () => {
+    const backendUrl = Constants.expoConfig?.extra?.backendUrl;
+    if (!backendUrl) {
+      console.warn('HomeScreen: Backend URL not configured');
+      return;
+    }
+    
+    try {
+      console.log('HomeScreen: Testing backend API connection...');
+      const response = await fetch(`${backendUrl}/scans`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('HomeScreen: Backend API is reachable. Scans count:', data?.length || 0);
+      } else {
+        console.error('HomeScreen: Backend API returned error:', response.status);
+      }
+    } catch (error: any) {
+      console.error('HomeScreen: Backend API connection failed:', error?.message);
+    }
+  };
 
   const parseAnalysis = (analysisJson: AnalysisData | undefined): ParsedAnalysisContent | null => {
     console.log('HomeScreen: Parsing analysis data:', JSON.stringify(analysisJson, null, 2));
@@ -238,7 +275,7 @@ export default function HomeScreen() {
     try {
       const { data, error } = await supabase
         .from('scans')
-        .select('id, image_url, created_at, analysis')
+        .select('id, image_url, created_at, analysis, language')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -363,15 +400,18 @@ export default function HomeScreen() {
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
     console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
     console.log('HomeScreen: Image URL:', imageUrl);
+    console.log('HomeScreen: Selected language:', selectedLanguage);
     
     const dataToInsert = { 
       image_url: imageUrl,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      language: selectedLanguage,
     };
     
     console.log('HomeScreen: Inserting into "scans" table:', JSON.stringify(dataToInsert, null, 2));
     
     try {
+      // Save to Supabase (for image storage and analysis)
       const { data: insertData, error: insertError } = await supabase
         .from('scans')
         .insert([dataToInsert])
@@ -394,6 +434,35 @@ export default function HomeScreen() {
 
       console.log('HomeScreen: ========== INSERT SUCCESS ==========');
       console.log('HomeScreen: Inserted data:', JSON.stringify(insertData, null, 2));
+      
+      // Also create a scan record in the backend API with the language
+      console.log('HomeScreen: Creating scan record in backend API');
+      const backendUrl = Constants.expoConfig?.extra?.backendUrl;
+      
+      if (backendUrl) {
+        try {
+          const backendResponse = await fetch(`${backendUrl}/scans`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ language: selectedLanguage }),
+          });
+          
+          if (backendResponse.ok) {
+            const backendData = await backendResponse.json();
+            console.log('HomeScreen: Backend scan created:', JSON.stringify(backendData, null, 2));
+          } else {
+            console.error('HomeScreen: Backend API error:', backendResponse.status);
+          }
+        } catch (backendError: any) {
+          console.error('HomeScreen: Backend API exception:', backendError?.message);
+          // Don't fail the whole operation if backend API fails
+        }
+      } else {
+        console.warn('HomeScreen: Backend URL not configured, skipping backend API call');
+      }
+      
       return true;
     } catch (error: any) {
       console.error('HomeScreen: ========== EXCEPTION IN SAVE ==========');
@@ -570,6 +639,11 @@ export default function HomeScreen() {
     });
   };
 
+  const openSettings = () => {
+    console.log('HomeScreen: User tapped settings button');
+    router.push('/settings');
+  };
+
   const emptyStateText = 'Ще немає сканованих листів';
   const emptyStateSubtext = 'Натисніть кнопку нижче, щоб додати перший лист';
   const headerTitle = 'Мій Помічник';
@@ -592,13 +666,27 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <IconSymbol
-          ios_icon_name="doc.text.fill"
-          android_material_icon_name="description"
-          size={32}
-          color={colors.primary}
-        />
-        <Text style={styles.headerTitle}>{headerTitle}</Text>
+        <View style={styles.headerLeft}>
+          <IconSymbol
+            ios_icon_name="doc.text.fill"
+            android_material_icon_name="description"
+            size={32}
+            color={colors.primary}
+          />
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={openSettings}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <IconSymbol
+            ios_icon_name="gear"
+            android_material_icon_name="settings"
+            size={28}
+            color={colors.text}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -959,18 +1047,26 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 20,
     backgroundColor: colors.backgroundAlt,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
     marginLeft: 12,
+  },
+  settingsButton: {
+    padding: 8,
   },
   scrollView: {
     flex: 1,
