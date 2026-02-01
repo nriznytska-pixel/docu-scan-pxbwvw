@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,6 +28,7 @@ interface AnalysisData {
 
 interface ParsedAnalysisContent {
   sender?: string;
+  type?: string;
   summary_ua: string;
   deadline?: string;
   amount?: number;
@@ -41,6 +43,14 @@ interface ScannedDocument {
   analysis?: AnalysisData;
 }
 
+const TEMPLATE_LABELS: Record<string, string> = {
+  'bezwaar': '✍️ Оскаржити',
+  'betalingsregeling': '💰 Розстрочка',
+  'uitstel': '⏰ Більше часу',
+  'foto_opvragen': '📷 Запросити фото',
+  'adresbevestiging': '📍 Підтвердити адресу',
+};
+
 export default function HomeScreen() {
   console.log('HomeScreen: Component rendered');
   
@@ -50,6 +60,9 @@ export default function HomeScreen() {
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [generatingResponse, setGeneratingResponse] = useState(false);
+  const [showResponseModal, setShowResponseModal] = useState(false);
+  const [generatedResponse, setGeneratedResponse] = useState<string>('');
 
   useEffect(() => {
     console.log('HomeScreen: Initial load - fetching scans');
@@ -120,6 +133,90 @@ export default function HomeScreen() {
         console.error('HomeScreen: Failed to open Google Calendar:', err);
         Alert.alert('Помилка', 'Не вдалося відкрити Google Calendar');
       });
+  };
+
+  const handleTemplatePress = async (templateType: string, analysis: ParsedAnalysisContent) => {
+    console.log('HomeScreen: User tapped template button:', templateType);
+    console.log('HomeScreen: Analysis data:', JSON.stringify(analysis, null, 2));
+    
+    setGeneratingResponse(true);
+    
+    const webhookUrl = 'https://hook.eu1.make.com/w2ulfcq5936zqn4vwbjd6uy3g90aijuc';
+    
+    const requestBody = {
+      sender: analysis.sender || '',
+      type: analysis.type || '',
+      summary_ua: analysis.summary_ua || '',
+      deadline: analysis.deadline || '',
+      amount: analysis.amount || null,
+      template_type: templateType,
+    };
+    
+    console.log('HomeScreen: Sending webhook request to:', webhookUrl);
+    console.log('HomeScreen: Request body:', JSON.stringify(requestBody, null, 2));
+    
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      console.log('HomeScreen: Webhook response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const responseData = await response.json();
+      console.log('HomeScreen: Webhook response data:', JSON.stringify(responseData, null, 2));
+      
+      // Parse response.data.content[0].text
+      if (responseData && responseData.data && responseData.data.content && responseData.data.content[0]) {
+        const responseText = responseData.data.content[0].text;
+        console.log('HomeScreen: Extracted response text:', responseText);
+        
+        setGeneratedResponse(responseText);
+        setGeneratingResponse(false);
+        setShowResponseModal(true);
+      } else {
+        console.error('HomeScreen: Unexpected response structure');
+        Alert.alert('Помилка', 'Отримано некоректну відповідь від сервера');
+        setGeneratingResponse(false);
+      }
+    } catch (error) {
+      console.error('HomeScreen: Error calling webhook:', error);
+      Alert.alert('Помилка', 'Не вдалося згенерувати відповідь. Спробуйте ще раз.');
+      setGeneratingResponse(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    console.log('HomeScreen: User tapped "Копіювати" button');
+    Clipboard.setString(generatedResponse);
+    Alert.alert('Успіх', 'Текст скопійовано в буфер обміну');
+  };
+
+  const sendEmail = () => {
+    console.log('HomeScreen: User tapped "Надіслати email" button');
+    const emailUrl = `mailto:?body=${encodeURIComponent(generatedResponse)}`;
+    
+    Linking.openURL(emailUrl)
+      .then(() => {
+        console.log('HomeScreen: Successfully opened email app');
+      })
+      .catch((err) => {
+        console.error('HomeScreen: Failed to open email app:', err);
+        Alert.alert('Помилка', 'Не вдалося відкрити додаток електронної пошти');
+      });
+  };
+
+  const closeResponseModal = () => {
+    console.log('HomeScreen: Closing response modal');
+    setShowResponseModal(false);
+    setGeneratedResponse('');
   };
 
   const fetchScans = async () => {
@@ -662,11 +759,19 @@ export default function HomeScreen() {
                     
                     {analysis.templates && analysis.templates.length > 0 && (
                       <View style={styles.templatesContainer}>
-                        {analysis.templates.map((template, index) => (
-                          <TouchableOpacity key={index} style={styles.templateButton}>
-                            <Text style={styles.templateButtonText}>{template}</Text>
-                          </TouchableOpacity>
-                        ))}
+                        {analysis.templates.map((template, index) => {
+                          const templateLabel = TEMPLATE_LABELS[template] || template;
+                          return (
+                            <TouchableOpacity 
+                              key={index} 
+                              style={styles.templateButton}
+                              onPress={() => handleTemplatePress(template, analysis)}
+                              disabled={generatingResponse}
+                            >
+                              <Text style={styles.templateButtonText}>{templateLabel}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     )}
                   </View>
@@ -675,6 +780,52 @@ export default function HomeScreen() {
             </SafeAreaView>
           );
         })()}
+      </Modal>
+
+      <Modal
+        visible={generatingResponse}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.loadingModalOverlay}>
+          <View style={styles.loadingModalContent}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingModalText}>Генерую відповідь...</Text>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showResponseModal}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={closeResponseModal}
+      >
+        <SafeAreaView style={styles.responseModalContainer} edges={['top', 'bottom']}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={closeResponseModal} style={styles.closeButton}>
+              <IconSymbol
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={24}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Згенерована відповідь</Text>
+            <View style={styles.placeholder} />
+          </View>
+          <ScrollView style={styles.responseScrollView} contentContainerStyle={styles.responseScrollContent}>
+            <Text style={styles.responseText}>{generatedResponse}</Text>
+          </ScrollView>
+          <View style={styles.responseActions}>
+            <TouchableOpacity style={styles.copyButton} onPress={copyToClipboard}>
+              <Text style={styles.copyButtonText}>📋 Копіювати</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.emailButton} onPress={sendEmail}>
+              <Text style={styles.emailButtonText}>✉️ Надіслати email</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </Modal>
 
       <Modal
@@ -986,6 +1137,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   templateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  loadingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingModalContent: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    minWidth: 200,
+  },
+  loadingModalText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  responseModalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  responseScrollView: {
+    flex: 1,
+  },
+  responseScrollContent: {
+    padding: 20,
+  },
+  responseText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+  },
+  responseActions: {
+    padding: 20,
+    backgroundColor: colors.backgroundAlt,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 12,
+  },
+  copyButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  copyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  emailButton: {
+    backgroundColor: '#34C759',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  emailButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
