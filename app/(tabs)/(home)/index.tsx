@@ -63,6 +63,8 @@ export default function HomeScreen() {
   const [generatingResponse, setGeneratingResponse] = useState(false);
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [generatedResponse, setGeneratedResponse] = useState<string>('');
+  const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
+  const [detailImageError, setDetailImageError] = useState(false);
 
   useEffect(() => {
     console.log('HomeScreen: Initial load - fetching scans');
@@ -217,6 +219,16 @@ export default function HomeScreen() {
     console.log('HomeScreen: Closing response modal');
     setShowResponseModal(false);
     setGeneratedResponse('');
+  };
+
+  const handleImageError = (docId: string) => {
+    console.log('HomeScreen: Image failed to load for document:', docId);
+    setImageLoadErrors(prev => ({ ...prev, [docId]: true }));
+  };
+
+  const handleDetailImageError = () => {
+    console.log('HomeScreen: Detail image failed to load');
+    setDetailImageError(true);
   };
 
   const fetchScans = async () => {
@@ -495,11 +507,13 @@ export default function HomeScreen() {
   const viewDocument = (doc: ScannedDocument) => {
     console.log('HomeScreen: Opening document view for ID:', doc.id);
     setSelectedDocument(doc);
+    setDetailImageError(false);
   };
 
   const closeDocumentView = () => {
     console.log('HomeScreen: Closing document view');
     setSelectedDocument(null);
+    setDetailImageError(false);
   };
 
   const confirmDeleteDocument = (docId: string) => {
@@ -562,6 +576,7 @@ export default function HomeScreen() {
   const galleryButtonText = 'Вибрати з галереї';
   const uploadingText = 'Завантаження...';
   const documentText = 'Лист';
+  const imageDeletedText = 'Фото видалено для безпеки';
 
   if (loading) {
     return (
@@ -609,6 +624,8 @@ export default function HomeScreen() {
             {documents.map((doc, index) => {
               const formattedDate = formatDate(doc.created_at);
               const documentName = `${documentText} ${documents.length - index}`;
+              const hasImageError = imageLoadErrors[doc.id];
+              
               return (
                 <TouchableOpacity
                   key={doc.id}
@@ -616,7 +633,17 @@ export default function HomeScreen() {
                   onPress={() => viewDocument(doc)}
                   activeOpacity={0.7}
                 >
-                  <Image source={{ uri: doc.image_url }} style={styles.documentThumbnail} />
+                  {hasImageError ? (
+                    <View style={styles.imagePlaceholder}>
+                      <Text style={styles.placeholderIcon}>📄</Text>
+                    </View>
+                  ) : (
+                    <Image 
+                      source={{ uri: doc.image_url }} 
+                      style={styles.documentThumbnail}
+                      onError={() => handleImageError(doc.id)}
+                    />
+                  )}
                   <View style={styles.documentInfo}>
                     <Text style={styles.documentName} numberOfLines={1}>
                       {documentName}
@@ -706,7 +733,19 @@ export default function HomeScreen() {
                 style={styles.modalScrollView}
                 contentContainerStyle={styles.modalScrollContent}
               >
-                <Image source={{ uri: selectedDocument.image_url }} style={styles.fullImage} resizeMode="contain" />
+                {detailImageError ? (
+                  <View style={styles.detailImagePlaceholder}>
+                    <Text style={styles.detailPlaceholderIcon}>📄</Text>
+                    <Text style={styles.detailPlaceholderText}>{imageDeletedText}</Text>
+                  </View>
+                ) : (
+                  <Image 
+                    source={{ uri: selectedDocument.image_url }} 
+                    style={styles.fullImage} 
+                    resizeMode="contain"
+                    onError={handleDetailImageError}
+                  />
+                )}
                 
                 {!selectedDocument.analysis && (
                   <View style={styles.analysisContainer}>
@@ -952,6 +991,16 @@ const styles = StyleSheet.create({
     height: 150,
     backgroundColor: colors.background,
   },
+  imagePlaceholder: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#E5E5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderIcon: {
+    fontSize: 48,
+  },
   documentInfo: {
     padding: 12,
   },
@@ -1059,6 +1108,24 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 400,
     backgroundColor: colors.background,
+  },
+  detailImagePlaceholder: {
+    width: '100%',
+    height: 400,
+    backgroundColor: '#E5E5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  detailPlaceholderIcon: {
+    fontSize: 80,
+    marginBottom: 16,
+  },
+  detailPlaceholderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   analysisContainer: {
     padding: 20,
