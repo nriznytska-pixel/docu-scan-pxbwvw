@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -80,13 +80,56 @@ export default function HomeScreen() {
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
   const [detailImageError, setDetailImageError] = useState(false);
 
+  const fetchScans = useCallback(async () => {
+    console.log('HomeScreen: fetchScans started');
+    
+    if (!user) {
+      console.log('HomeScreen: No user logged in, skipping fetch');
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      console.log('HomeScreen: Fetching scans for user:', user.id);
+      
+      const { data, error } = await supabase
+        .from('scans')
+        .select('id, image_url, created_at, analysis, language, user_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('HomeScreen: Error fetching scans:', JSON.stringify(error, null, 2));
+        return;
+      }
+
+      const scansCount = data?.length || 0;
+      console.log('HomeScreen: Successfully fetched scans, count:', scansCount);
+      
+      // Log the language of each scan for debugging
+      if (data && data.length > 0) {
+        console.log('HomeScreen: Recent scans with languages:');
+        data.slice(0, 3).forEach((scan, index) => {
+          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}", user_id="${scan.user_id}", has_analysis=${!!scan.analysis}`);
+        });
+      }
+      
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('HomeScreen: Exception in fetchScans:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     console.log('HomeScreen: Initial load - fetching scans');
     fetchScans();
     
     // Test backend API connection
     testBackendConnection();
-  }, []);
+  }, [fetchScans]);
 
   // Set up real-time subscription for scan updates
   useEffect(() => {
@@ -145,7 +188,7 @@ export default function HomeScreen() {
       console.log('HomeScreen: Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, selectedDocument]);
+  }, [user, selectedDocument, fetchScans]);
 
   // Poll for updates on the selected document if analysis is pending
   useEffect(() => {
@@ -377,49 +420,6 @@ export default function HomeScreen() {
   const handleDetailImageError = () => {
     console.log('HomeScreen: Detail image failed to load');
     setDetailImageError(true);
-  };
-
-  const fetchScans = async () => {
-    console.log('HomeScreen: fetchScans started');
-    
-    if (!user) {
-      console.log('HomeScreen: No user logged in, skipping fetch');
-      setLoading(false);
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      console.log('HomeScreen: Fetching scans for user:', user.id);
-      
-      const { data, error } = await supabase
-        .from('scans')
-        .select('id, image_url, created_at, analysis, language, user_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('HomeScreen: Error fetching scans:', JSON.stringify(error, null, 2));
-        return;
-      }
-
-      const scansCount = data?.length || 0;
-      console.log('HomeScreen: Successfully fetched scans, count:', scansCount);
-      
-      // Log the language of each scan for debugging
-      if (data && data.length > 0) {
-        console.log('HomeScreen: Recent scans with languages:');
-        data.slice(0, 3).forEach((scan, index) => {
-          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}", user_id="${scan.user_id}", has_analysis=${!!scan.analysis}`);
-        });
-      }
-      
-      setDocuments(data || []);
-    } catch (error) {
-      console.error('HomeScreen: Exception in fetchScans:', error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const requestCameraPermission = async () => {

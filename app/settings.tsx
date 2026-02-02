@@ -74,16 +74,26 @@ export default function SettingsScreen() {
             backgroundColor: colors.backgroundAlt,
           },
           headerTintColor: colors.text,
+          headerShadowVisible: true,
         }}
       />
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Language Selector Section */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>{languageSelectorLabel}</Text>
+            <Text style={styles.sectionDescription}>
+              Оберіть мову для перекладу офіційних листів
+            </Text>
             <View style={styles.languageList}>
-              {LANGUAGES.map((language) => {
+              {LANGUAGES.map((language, index) => {
                 const isSelected = selectedLanguage === language.code;
                 const languageDisplay = `${language.emoji} ${language.label}`;
+                const isLastItem = index === LANGUAGES.length - 1;
                 
                 console.log(`SettingsScreen: Language ${language.code} - isSelected: ${isSelected}`);
                 
@@ -93,6 +103,7 @@ export default function SettingsScreen() {
                     style={[
                       styles.languageOption,
                       isSelected && styles.languageOptionSelected,
+                      isLastItem && styles.languageOptionLast,
                     ]}
                     onPress={() => handleLanguageSelect(language.code)}
                     activeOpacity={0.7}
@@ -104,12 +115,14 @@ export default function SettingsScreen() {
                       {languageDisplay}
                     </Text>
                     {isSelected && (
-                      <IconSymbol
-                        ios_icon_name="checkmark"
-                        android_material_icon_name="check"
-                        size={24}
-                        color={colors.primary}
-                      />
+                      <View style={styles.checkmarkContainer}>
+                        <IconSymbol
+                          ios_icon_name="checkmark.circle.fill"
+                          android_material_icon_name="check-circle"
+                          size={24}
+                          color={colors.primary}
+                        />
+                      </View>
                     )}
                   </TouchableOpacity>
                 );
@@ -117,6 +130,10 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Spacer to push logout button to bottom */}
+          <View style={styles.spacer} />
+
+          {/* Logout Section */}
           <View style={styles.logoutSection}>
             <TouchableOpacity
               style={styles.logoutButton}
@@ -134,6 +151,7 @@ export default function SettingsScreen() {
           </View>
         </ScrollView>
 
+        {/* Logout Confirmation Modal */}
         <Modal
           visible={showLogoutModal}
           animationType="fade"
@@ -171,46 +189,73 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   section: {
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
   },
   languageList: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   languageOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
+    minHeight: 56,
+  },
+  languageOptionLast: {
+    borderBottomWidth: 0,
   },
   languageOptionSelected: {
     backgroundColor: colors.backgroundAlt,
   },
   languageText: {
-    fontSize: 16,
+    fontSize: 17,
     color: colors.text,
+    flex: 1,
   },
   languageTextSelected: {
     fontWeight: '600',
     color: colors.primary,
   },
+  checkmarkContainer: {
+    marginLeft: 12,
+  },
+  spacer: {
+    flex: 1,
+    minHeight: 40,
+  },
   logoutSection: {
-    marginTop: 40,
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -220,39 +265,39 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   logoutButtonText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginLeft: 8,
+    marginLeft: 12,
   },
   logoutModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   logoutModalContent: {
     backgroundColor: colors.backgroundAlt,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     width: '100%',
     maxWidth: 400,
-    elevation: 5,
+    elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 10,
   },
   logoutModalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 12,
@@ -261,8 +306,9 @@ const styles = StyleSheet.create({
   logoutModalMessage: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 24,
+    marginBottom: 28,
     textAlign: 'center',
+    lineHeight: 22,
   },
   logoutModalButtons: {
     flexDirection: 'row',
@@ -271,11 +317,13 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: colors.background,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cancelButtonText: {
     fontSize: 16,
@@ -284,15 +332,20 @@ const styles = StyleSheet.create({
   },
   confirmLogoutButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: colors.error,
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   confirmLogoutButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });

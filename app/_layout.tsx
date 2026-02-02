@@ -40,7 +40,7 @@ function RootLayoutNav() {
       console.log('RootLayoutNav: User logged in, redirecting to home');
       router.replace('/(tabs)/(home)');
     }
-  }, [user, loading, segments]);
+  }, [user, loading, segments, router]);
 
   return (
     <Stack
