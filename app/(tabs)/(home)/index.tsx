@@ -18,7 +18,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { decode } from 'base64-arraybuffer';
-import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
@@ -58,14 +57,25 @@ const TEMPLATE_LABELS: Record<string, string> = {
   'adresbevestiging': '📍 Підтвердити адресу',
 };
 
+const LANGUAGES = [
+  { code: 'uk', label: '🇺🇦 Українська' },
+  { code: 'ru', label: '🇷🇺 Русский' },
+  { code: 'en', label: '🇬🇧 English' },
+  { code: 'pl', label: '🇵🇱 Polski' },
+  { code: 'tr', label: '🇹🇷 Türkçe' },
+  { code: 'de', label: '🇩🇪 Deutsch' },
+  { code: 'fr', label: '🇫🇷 Français' },
+  { code: 'es', label: '🇪🇸 Español' },
+  { code: 'ar', label: '🇸🇦 العربية' },
+];
+
 const DEFAULT_LANGUAGE = 'uk';
 
 export default function HomeScreen() {
   console.log('HomeScreen: Component rendered');
   
-  const router = useRouter();
-  const { selectedLanguage } = useLanguage();
-  const { user } = useAuth();
+  const { selectedLanguage, setSelectedLanguage } = useLanguage();
+  const { user, signOut } = useAuth();
   
   // Log the current language whenever component renders
   console.log('HomeScreen: Current selectedLanguage from context:', selectedLanguage);
@@ -81,6 +91,7 @@ export default function HomeScreen() {
   const [generatedResponse, setGeneratedResponse] = useState<string>('');
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
   const [detailImageError, setDetailImageError] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const fetchScans = useCallback(async () => {
     console.log('HomeScreen: fetchScans started');
@@ -805,7 +816,17 @@ export default function HomeScreen() {
 
   const openSettings = () => {
     console.log('HomeScreen: User tapped settings button');
-    router.push('/settings');
+    setShowSettings(true);
+  };
+
+  const handleLogout = async () => {
+    console.log('HomeScreen: User tapped logout');
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('HomeScreen: Logout error:', error);
+      Alert.alert('Помилка', 'Не вдалося вийти');
+    }
   };
 
   const emptyStateText = 'Ще немає сканованих листів';
@@ -827,6 +848,70 @@ export default function HomeScreen() {
     );
   }
 
+  // ===== SETTINGS SCREEN (embedded, no router) =====
+  if (showSettings) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setShowSettings(false)} style={{ padding: 8 }}>
+            <Text style={{ fontSize: 18, color: colors.primary, fontWeight: '600' }}>← Назад</Text>
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>⚙️ Налаштування</Text>
+          <View style={{ width: 70 }} />
+        </View>
+        <ScrollView style={styles.scrollView} contentContainerStyle={{ padding: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 16 }}>
+            Мова перекладу:
+          </Text>
+          {LANGUAGES.map((lang) => (
+            <TouchableOpacity
+              key={lang.code}
+              onPress={() => {
+                console.log('Settings: Language selected:', lang.code);
+                setSelectedLanguage(lang.code);
+              }}
+              activeOpacity={0.7}
+              style={{
+                backgroundColor: selectedLanguage === lang.code ? '#007AFF' : '#E5E5EA',
+                paddingVertical: 14,
+                paddingHorizontal: 20,
+                borderRadius: 10,
+                marginBottom: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontWeight: '500',
+                  color: selectedLanguage === lang.code ? '#FFFFFF' : '#000000',
+                }}
+              >
+                {lang.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            onPress={handleLogout}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: '#FF3B30',
+              paddingVertical: 14,
+              paddingHorizontal: 20,
+              borderRadius: 10,
+              marginTop: 32,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' }}>
+              Вийти
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ===== MAIN HOME SCREEN =====
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -1140,6 +1225,11 @@ export default function HomeScreen() {
             <View style={styles.placeholder} />
           </View>
           <ScrollView style={styles.responseScrollView} contentContainerStyle={styles.responseScrollContent}>
+            <View style={{ backgroundColor: '#FFF3CD', padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#FFE69C' }}>
+              <Text style={{ fontSize: 14, color: '#664D03', lineHeight: 20 }}>
+                ⚠️ Це приклад листа-відповіді, а не юридична порада. Перевірте текст перед відправкою та за потреби зверніться до фахівця.
+              </Text>
+            </View>
             <Text style={styles.responseText}>{generatedResponse}</Text>
           </ScrollView>
           <View style={styles.responseActions}>
