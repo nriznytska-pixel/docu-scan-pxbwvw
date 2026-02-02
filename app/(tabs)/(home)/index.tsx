@@ -58,6 +58,8 @@ const TEMPLATE_LABELS: Record<string, string> = {
   'adresbevestiging': '📍 Підтвердити адресу',
 };
 
+const DEFAULT_LANGUAGE = 'uk';
+
 export default function HomeScreen() {
   console.log('HomeScreen: Component rendered');
   
@@ -529,8 +531,11 @@ export default function HomeScreen() {
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
     console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
     console.log('HomeScreen: Image URL:', imageUrl);
-    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage value at save time:', selectedLanguage);
-    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage type:', typeof selectedLanguage);
+    
+    // Get the current language at the time of saving (not from closure)
+    const languageToSave = selectedLanguage || DEFAULT_LANGUAGE;
+    console.log('HomeScreen: 🔍 CRITICAL - Language to save:', languageToSave);
+    console.log('HomeScreen: 🔍 CRITICAL - Language type:', typeof languageToSave);
     
     if (!user) {
       console.error('HomeScreen: No user logged in, cannot save scan');
@@ -543,7 +548,7 @@ export default function HomeScreen() {
     const dataToInsert = { 
       image_url: imageUrl,
       created_at: new Date().toISOString(),
-      language: selectedLanguage,
+      language: languageToSave,
       user_id: user.id,
     };
     
@@ -578,9 +583,9 @@ export default function HomeScreen() {
       if (insertData && insertData.length > 0) {
         const savedLanguage = insertData[0].language;
         console.log('HomeScreen: 🔍 CRITICAL - Language saved in database:', savedLanguage);
-        if (savedLanguage !== selectedLanguage) {
+        if (savedLanguage !== languageToSave) {
           console.error('HomeScreen: ⚠️ WARNING - Language mismatch!');
-          console.error(`  Expected: "${selectedLanguage}"`);
+          console.error(`  Expected: "${languageToSave}"`);
           console.error(`  Got: "${savedLanguage}"`);
         } else {
           console.log('HomeScreen: ✅ Language saved correctly!');
@@ -593,13 +598,13 @@ export default function HomeScreen() {
       
       if (backendUrl) {
         try {
-          console.log('HomeScreen: 🔍 Sending language to backend:', selectedLanguage);
+          console.log('HomeScreen: 🔍 Sending language to backend:', languageToSave);
           const backendResponse = await fetch(`${backendUrl}/scans`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ language: selectedLanguage }),
+            body: JSON.stringify({ language: languageToSave }),
           });
           
           if (backendResponse.ok) {
