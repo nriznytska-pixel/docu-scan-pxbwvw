@@ -295,9 +295,10 @@ export default function HomeScreen() {
       const responseData = await response.json();
       console.log('HomeScreen (iOS): Webhook response data:', JSON.stringify(responseData, null, 2));
       
-      // Parse response.data.content[0].text
-      if (responseData && responseData.data && responseData.data.content && responseData.data.content[0]) {
-        const responseText = responseData.data.content[0].text;
+      // Parse response with flexible content path handling
+      const content = responseData?.data?.content || responseData?.content;
+      if (content && content[0]) {
+        const responseText = content[0].text;
         console.log('HomeScreen (iOS): Extracted response text:', responseText);
         
         setGeneratedResponse(responseText);
@@ -922,8 +923,6 @@ export default function HomeScreen() {
           <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Modals remain the same - truncated for brevity */}
     </SafeAreaView>
   );
 }
@@ -1109,5 +1108,4 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginLeft: 8,
   },
-  // ... rest of styles remain the same
 });
