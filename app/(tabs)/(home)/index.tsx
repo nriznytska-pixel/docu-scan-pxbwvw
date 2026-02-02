@@ -23,6 +23,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Constants from 'expo-constants';
 
 interface AnalysisData {
@@ -46,6 +47,7 @@ interface ScannedDocument {
   created_at: string;
   analysis?: AnalysisData;
   language?: string;
+  user_id?: string;
 }
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -61,6 +63,7 @@ export default function HomeScreen() {
   
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
+  const { user } = useAuth();
   
   // Log the current language whenever component renders
   console.log('HomeScreen: Current selectedLanguage from context:', selectedLanguage);
@@ -274,11 +277,21 @@ export default function HomeScreen() {
 
   const fetchScans = async () => {
     console.log('HomeScreen: fetchScans started');
+    
+    if (!user) {
+      console.log('HomeScreen: No user logged in, skipping fetch');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
+      console.log('HomeScreen: Fetching scans for user:', user.id);
+      
       const { data, error } = await supabase
         .from('scans')
-        .select('id, image_url, created_at, analysis, language')
+        .select('id, image_url, created_at, analysis, language, user_id')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -293,7 +306,7 @@ export default function HomeScreen() {
       if (data && data.length > 0) {
         console.log('HomeScreen: Recent scans with languages:');
         data.slice(0, 3).forEach((scan, index) => {
-          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}"`);
+          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}", user_id="${scan.user_id}"`);
         });
       }
       
@@ -415,10 +428,19 @@ export default function HomeScreen() {
     console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage value at save time:', selectedLanguage);
     console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage type:', typeof selectedLanguage);
     
+    if (!user) {
+      console.error('HomeScreen: No user logged in, cannot save scan');
+      Alert.alert('Помилка', 'Ви повинні увійти в систему для збереження сканів');
+      return false;
+    }
+    
+    console.log('HomeScreen: 🔍 User ID:', user.id);
+    
     const dataToInsert = { 
       image_url: imageUrl,
       created_at: new Date().toISOString(),
       language: selectedLanguage,
+      user_id: user.id,
     };
     
     console.log('HomeScreen: 🔍 CRITICAL - Full data object to insert:', JSON.stringify(dataToInsert, null, 2));
