@@ -88,6 +88,110 @@ export default function HomeScreen() {
     testBackendConnection();
   }, []);
 
+  // Set up real-time subscription for scan updates
+  useEffect(() => {
+    if (!user) {
+      console.log('HomeScreen: No user, skipping real-time subscription');
+      return;
+    }
+
+    console.log('HomeScreen: Setting up real-time subscription for user:', user.id);
+
+    // Subscribe to changes in the scans table for this user
+    const channel = supabase
+      .channel('scans-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scans',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('HomeScreen: Real-time update received:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('HomeScreen: New scan inserted, refreshing list');
+            fetchScans();
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('HomeScreen: Scan updated:', payload.new);
+            const updatedScan = payload.new as ScannedDocument;
+            
+            // Update the documents list
+            setDocuments((prev) => 
+              prev.map((doc) => 
+                doc.id === updatedScan.id ? updatedScan : doc
+              )
+            );
+            
+            // If this is the currently selected document, update it
+            if (selectedDocument && selectedDocument.id === updatedScan.id) {
+              console.log('HomeScreen: Updating selected document with new analysis');
+              setSelectedDocument(updatedScan);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            console.log('HomeScreen: Scan deleted, refreshing list');
+            fetchScans();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('HomeScreen: Subscription status:', status);
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('HomeScreen: Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user, selectedDocument]);
+
+  // Poll for updates on the selected document if analysis is pending
+  useEffect(() => {
+    if (!selectedDocument || selectedDocument.analysis) {
+      // No need to poll if no document selected or analysis already exists
+      return;
+    }
+
+    console.log('HomeScreen: Starting polling for scan analysis:', selectedDocument.id);
+
+    const pollInterval = setInterval(async () => {
+      console.log('HomeScreen: Polling for analysis update...');
+      
+      try {
+        const { data, error } = await supabase
+          .from('scans')
+          .select('*')
+          .eq('id', selectedDocument.id)
+          .single();
+
+        if (error) {
+          console.error('HomeScreen: Error polling for scan:', error);
+          return;
+        }
+
+        if (data && data.analysis) {
+          console.log('HomeScreen: Analysis found! Updating selected document');
+          setSelectedDocument(data);
+          
+          // Also update in the documents list
+          setDocuments((prev) =>
+            prev.map((doc) => (doc.id === data.id ? data : doc))
+          );
+        }
+      } catch (err) {
+        console.error('HomeScreen: Exception while polling:', err);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Cleanup interval on unmount or when analysis arrives
+    return () => {
+      console.log('HomeScreen: Stopping polling for scan analysis');
+      clearInterval(pollInterval);
+    };
+  }, [selectedDocument]);
+
   const testBackendConnection = async () => {
     const backendUrl = Constants.expoConfig?.extra?.backendUrl;
     if (!backendUrl) {
@@ -306,7 +410,7 @@ export default function HomeScreen() {
       if (data && data.length > 0) {
         console.log('HomeScreen: Recent scans with languages:');
         data.slice(0, 3).forEach((scan, index) => {
-          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}", user_id="${scan.user_id}"`);
+          console.log(`  Scan ${index + 1}: language="${scan.language || 'null'}", user_id="${scan.user_id}", has_analysis=${!!scan.analysis}`);
         });
       }
       
@@ -630,6 +734,7 @@ export default function HomeScreen() {
   const viewDocument = (doc: ScannedDocument) => {
     console.log('HomeScreen: Opening document view for ID:', doc.id);
     console.log('HomeScreen: Document language:', doc.language || 'null');
+    console.log('HomeScreen: Document has analysis:', !!doc.analysis);
     setSelectedDocument(doc);
     setDetailImageError(false);
   };
@@ -894,12 +999,14 @@ export default function HomeScreen() {
                 
                 {!selectedDocument.analysis && (
                   <View style={styles.analysisContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 12 }} />
                     <Text style={styles.analyzingText}>{analyzingText}</Text>
                   </View>
                 )}
                 
                 {selectedDocument.analysis && !analysis && (
                   <View style={styles.analysisContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 12 }} />
                     <Text style={styles.analyzingText}>{analyzingText}</Text>
                   </View>
                 )}
