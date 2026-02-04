@@ -7,6 +7,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { RevenueCatProvider } from "@/contexts/RevenueCatContext";
 import { useColorScheme } from "react-native";
 import { SystemBars } from "react-native-edge-to-edge";
 import { StatusBar } from "expo-status-bar";
@@ -78,15 +79,17 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <LanguageProvider>
-          <WidgetProvider>
-            <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-              <SystemBars style={colorScheme === "dark" ? "light" : "dark"} />
-              <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-              <RootLayoutNav />
-            </ThemeProvider>
-          </WidgetProvider>
-        </LanguageProvider>
+        <RevenueCatProvider>
+          <LanguageProvider>
+            <WidgetProvider>
+              <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+                <SystemBars style={colorScheme === "dark" ? "light" : "dark"} />
+                <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+                <RootLayoutNav />
+              </ThemeProvider>
+            </WidgetProvider>
+          </LanguageProvider>
+        </RevenueCatProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
