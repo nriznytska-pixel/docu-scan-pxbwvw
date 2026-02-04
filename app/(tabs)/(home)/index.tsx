@@ -1301,6 +1301,57 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={showPaywall}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPaywall(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }} edges={['top', 'bottom']}>
+          <View style={{ flex: 1, padding: 20 }}>
+            <TouchableOpacity onPress={() => setShowPaywall(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
+              <Text style={{ fontSize: 24, color: '#64748B' }}>✕</Text>
+            </TouchableOpacity>
+            
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <Text style={{ fontSize: 48 }}>📄</Text>
+              <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1E293B', marginTop: 16, textAlign: 'center' }}>Безлімітний доступ</Text>
+              <Text style={{ fontSize: 16, color: '#64748B', marginTop: 8, textAlign: 'center' }}>Ви використали {scanCount} з {FREE_SCAN_LIMIT} безкоштовних сканувань</Text>
+            </View>
+
+            <View style={{ marginTop: 32, gap: 12 }}>
+              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#3B82F6', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щомісячно</Text>
+                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>Скасувати будь-коли</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€4.99</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#1D4ED8', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щорічно</Text>
+                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>2 місяці безкоштовно</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€34.99</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#059669', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Назавжди</Text>
+                  <Text style={{ fontSize: 14, color: '#A7F3D0' }}>Одноразова оплата</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€29.99</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginTop: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center' }}>✓ Безлімітні сканування  ✓ Усі мови перекладу  ✓ Генерація відповідей</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
