@@ -81,6 +81,9 @@ export default function HomeScreen() {
   const [generatedResponse, setGeneratedResponse] = useState<string>('');
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
   const [detailImageError, setDetailImageError] = useState(false);
+  const [scanCount, setScanCount] = useState(0);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const FREE_SCAN_LIMIT = 3;
 
   useEffect(() => {
     console.log('HomeScreen (iOS): Initial load - fetching scans');
@@ -190,6 +193,25 @@ export default function HomeScreen() {
       clearInterval(pollInterval);
     };
   }, [selectedDocument]);
+
+  useEffect(() => {
+    const fetchScanCount = async () => {
+      if (!user) return;
+      try {
+        const { count, error } = await supabase
+          .from('scans')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (!error && count !== null) {
+          setScanCount(count);
+          console.log('HomeScreen: User scan count:', count);
+        }
+      } catch (e) {
+        console.error('Error fetching scan count:', e);
+      }
+    };
+    fetchScanCount();
+  }, [user, documents]);
 
   const parseAnalysis = (analysisJson: AnalysisData | undefined): ParsedAnalysisContent | null => {
     console.log('HomeScreen (iOS): Parsing analysis data:', JSON.stringify(analysisJson, null, 2));
@@ -670,6 +692,12 @@ export default function HomeScreen() {
     console.log('HomeScreen (iOS): User tapped "Сфотографувати лист"');
     console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
     
+    if (scanCount >= FREE_SCAN_LIMIT) {
+      console.log('HomeScreen: Free scan limit reached, showing paywall');
+      setShowPaywall(true);
+      return;
+    }
+    
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
       return;
@@ -692,6 +720,12 @@ export default function HomeScreen() {
   const importFromGallery = async () => {
     console.log('HomeScreen (iOS): User tapped "Вибрати з галереї"');
     console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
+    
+    if (scanCount >= FREE_SCAN_LIMIT) {
+      console.log('HomeScreen: Free scan limit reached, showing paywall');
+      setShowPaywall(true);
+      return;
+    }
     
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
