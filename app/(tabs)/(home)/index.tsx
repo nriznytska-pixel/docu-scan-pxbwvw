@@ -372,6 +372,7 @@ export default function HomeScreen() {
     const webhookUrl = 'https://hook.eu1.make.com/w2ulfcq5936zqn4vwbjd6uy3g90aijuc';
     
     const requestBody = {
+      token: 'docuscan_secret_2024',
       sender: analysis.sender || '',
       type: analysis.type || '',
       summary_ua: analysis.summary_ua || '',
