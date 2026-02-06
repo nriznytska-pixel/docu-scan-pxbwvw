@@ -507,20 +507,15 @@ export default function HomeScreen() {
         return null;
       }
 
-      console.log('HomeScreen (iOS): Upload successful, creating signed URL');
+      console.log('HomeScreen (iOS): Upload successful, getting public URL');
 
-      const { data: urlData, error: urlError } = await supabase.storage
+      const { data: urlData } = supabase.storage
         .from('letters')
-        .createSignedUrl(filePath, 300);
+        .getPublicUrl(filePath);
 
-      if (urlError) {
-        console.error('HomeScreen (iOS): Error creating signed URL:', JSON.stringify(urlError, null, 2));
-        return null;
-      }
-
-      const signedUrl = urlData.signedUrl;
-      console.log('HomeScreen (iOS): Signed URL obtained:', signedUrl);
-      return signedUrl;
+      const publicUrl = urlData.publicUrl;
+      console.log('HomeScreen (iOS): Public URL obtained:', publicUrl);
+      return publicUrl;
     } catch (error) {
       console.error('HomeScreen (iOS): Exception in uploadToSupabase:', error);
       return null;
