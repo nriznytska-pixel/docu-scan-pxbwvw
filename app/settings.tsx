@@ -27,6 +27,7 @@ const LANGUAGE_OPTIONS = [
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
   { code: 'es', label: 'Español', flag: '🇪🇸' },
   { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷' },
 ];
 
 export default function SettingsScreen() {
@@ -94,7 +95,7 @@ export default function SettingsScreen() {
         <ScrollView 
           style={styles.scrollView} 
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
         >
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{languageSectionTitle}</Text>
@@ -127,8 +128,6 @@ export default function SettingsScreen() {
               })}
             </View>
           </View>
-
-          <View style={styles.spacer} />
 
           <View style={styles.logoutSection}>
             <TouchableOpacity
@@ -186,7 +185,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   section: {
     marginBottom: 24,
@@ -223,13 +222,9 @@ const styles = StyleSheet.create({
   languageButtonTextUnselected: {
     color: '#000000',
   },
-  spacer: {
-    flex: 1,
-    minHeight: 40,
-  },
   logoutSection: {
-    marginTop: 20,
-    paddingTop: 20,
+    marginTop: 32,
+    paddingTop: 24,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },

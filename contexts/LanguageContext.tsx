@@ -19,6 +19,7 @@ export const LANGUAGES: LanguageOption[] = [
   { code: 'fr', label: 'Français', emoji: '🇫🇷' },
   { code: 'es', label: 'Español', emoji: '🇪🇸' },
   { code: 'ar', label: 'العربية', emoji: '🇸🇦' },
+  { code: 'ti', label: 'ትግርኛ', emoji: '🇪🇷' },
 ];
 
 const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
