@@ -50,6 +50,8 @@ export default function LanguageSelectScreen() {
   };
 
   const handleContinue = async () => {
+    console.log('LanguageSelectScreen: Continue button tapped, selectedLanguage:', selectedLanguage);
+    
     if (!selectedLanguage) {
       console.log('LanguageSelectScreen: Continue tapped but no language selected');
       return;
@@ -72,6 +74,8 @@ export default function LanguageSelectScreen() {
   const chooseLanguageText = 'Оберіть мову / Choose language';
   const continueButtonText = 'Продовжити / Continue';
   const isButtonDisabled = !selectedLanguage;
+
+  console.log('LanguageSelectScreen: Render state - selectedLanguage:', selectedLanguage, 'isButtonDisabled:', isButtonDisabled);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

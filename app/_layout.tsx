@@ -28,10 +28,6 @@ function RootLayoutNav() {
   const router = useRouter();
   const [hasLanguage, setHasLanguage] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    checkLanguageSelection();
-  }, []);
-
   const checkLanguageSelection = async () => {
     try {
       const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -44,6 +40,16 @@ function RootLayoutNav() {
   };
 
   useEffect(() => {
+    checkLanguageSelection();
+  }, []);
+
+  useEffect(() => {
+    if (segments[0] === 'login' || segments[0] === 'signup') {
+      checkLanguageSelection();
+    }
+  }, [segments]);
+
+  useEffect(() => {
     if (loading || hasLanguage === null) {
       console.log('RootLayoutNav: Auth or language loading, waiting...');
       return;
@@ -51,6 +57,7 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(tabs)';
     const onLanguageSelect = segments[0] === 'language-select';
+    const onLoginOrSignup = segments[0] === 'login' || segments[0] === 'signup';
     
     console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'inAuthGroup:', inAuthGroup, 'hasLanguage:', hasLanguage);
 
@@ -60,7 +67,7 @@ function RootLayoutNav() {
     } else if (!user && inAuthGroup) {
       console.log('RootLayoutNav: No user, redirecting to login');
       router.replace('/login');
-    } else if (user && !inAuthGroup && hasLanguage) {
+    } else if (user && !inAuthGroup && hasLanguage && !onLoginOrSignup) {
       console.log('RootLayoutNav: User logged in, redirecting to home');
       router.replace('/(tabs)/(home)');
     }
