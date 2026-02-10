@@ -23,12 +23,15 @@ interface LanguageOption {
 
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦', enabled: true },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺', enabled: true },
   { code: 'en', label: 'English', flag: '🇬🇧', enabled: true },
   { code: 'nl', label: 'Nederlands', flag: '🇳🇱', enabled: true },
-  { code: 'ar', label: 'العربية', flag: '🇸🇦', enabled: true },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷', enabled: true },
-  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷', enabled: true },
   { code: 'pl', label: 'Polski', flag: '🇵🇱', enabled: true },
+  { code: 'tr', label: 'Türkçe', flag: '🇹🇷', enabled: true },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪', enabled: true },
+  { code: 'fr', label: 'Français', flag: '🇫🇷', enabled: true },
+  { code: 'es', label: 'Español', flag: '🇪🇸', enabled: true },
+  { code: 'ar', label: 'العربية', flag: '🇸🇦', enabled: true },
 ];
 
 const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
