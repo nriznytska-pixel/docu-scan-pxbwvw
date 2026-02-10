@@ -33,6 +33,7 @@ interface LanguageTexts {
   errorEmailExists: string;
   errorInvalidEmail: string;
   errorGeneric: string;
+  backButton: string;
 }
 
 const TEXTS: Record<string, LanguageTexts> = {
@@ -50,6 +51,7 @@ const TEXTS: Record<string, LanguageTexts> = {
     errorEmailExists: 'Цей email вже зареєстрований',
     errorInvalidEmail: 'Невірний формат email',
     errorGeneric: 'Помилка реєстрації. Спробуйте ще раз.',
+    backButton: '← Назад',
   },
   en: {
     title: '📬 Sign Up',
@@ -65,6 +67,7 @@ const TEXTS: Record<string, LanguageTexts> = {
     errorEmailExists: 'This email is already registered',
     errorInvalidEmail: 'Invalid email format',
     errorGeneric: 'Registration error. Please try again.',
+    backButton: '← Back',
   },
 };
 
@@ -146,7 +149,7 @@ export default function SignupScreen() {
   };
 
   const goToLogin = () => {
-    console.log('SignupScreen: User tapped sign in link');
+    console.log('SignupScreen: User tapped back button / sign in link');
     router.back();
   };
 
@@ -154,6 +157,15 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={goToLogin}
+        disabled={loading}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.backButtonText}>{texts.backButton}</Text>
+      </TouchableOpacity>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -236,6 +248,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingTop: Platform.OS === 'android' ? 48 : 0,
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 60 : 12,
+    left: 20,
+    zIndex: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
   keyboardView: {
     flex: 1,
