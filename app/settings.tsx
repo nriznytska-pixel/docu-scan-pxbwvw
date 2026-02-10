@@ -67,13 +67,13 @@ export default function SettingsScreen() {
     setShowLogoutModal(false);
   };
 
-  const backButtonText = translate('signup', 'back', selectedLanguage);
+  const backButtonText = translate('settings', 'back', selectedLanguage);
   const screenTitle = translate('settings', 'title', selectedLanguage);
   const languageSectionTitle = translate('settings', 'translationLanguage', selectedLanguage);
   const logoutButtonText = translate('settings', 'logout', selectedLanguage);
-  const logoutModalTitle = 'Вийти з акаунту?';
-  const logoutModalMessage = 'Ви впевнені, що хочете вийти?';
-  const cancelButtonText = 'Скасувати';
+  const logoutModalTitle = translate('settings', 'logoutModalTitle', selectedLanguage);
+  const logoutModalMessage = translate('settings', 'logoutModalMessage', selectedLanguage);
+  const cancelButtonText = translate('settings', 'cancel', selectedLanguage);
   const confirmLogoutButtonText = translate('settings', 'logout', selectedLanguage);
 
   return (
