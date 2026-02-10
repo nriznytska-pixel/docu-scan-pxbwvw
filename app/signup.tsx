@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,113 +15,43 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
-
-interface LanguageTexts {
-  title: string;
-  emailPlaceholder: string;
-  passwordPlaceholder: string;
-  confirmPasswordPlaceholder: string;
-  signUpButton: string;
-  hasAccount: string;
-  signInLink: string;
-  errorEmptyFields: string;
-  errorPasswordTooShort: string;
-  errorPasswordMismatch: string;
-  errorEmailExists: string;
-  errorInvalidEmail: string;
-  errorGeneric: string;
-  backButton: string;
-}
-
-const TEXTS: Record<string, LanguageTexts> = {
-  uk: {
-    title: '📬 Реєстрація',
-    emailPlaceholder: 'Email',
-    passwordPlaceholder: 'Пароль (мінімум 6 символів)',
-    confirmPasswordPlaceholder: 'Підтвердіть пароль',
-    signUpButton: 'Зареєструватися',
-    hasAccount: 'Вже є акаунт? ',
-    signInLink: 'Увійти',
-    errorEmptyFields: 'Будь ласка, заповніть всі поля',
-    errorPasswordTooShort: 'Пароль повинен містити мінімум 6 символів',
-    errorPasswordMismatch: 'Паролі не співпадають',
-    errorEmailExists: 'Цей email вже зареєстрований',
-    errorInvalidEmail: 'Невірний формат email',
-    errorGeneric: 'Помилка реєстрації. Спробуйте ще раз.',
-    backButton: '← Назад',
-  },
-  en: {
-    title: '📬 Sign Up',
-    emailPlaceholder: 'Email',
-    passwordPlaceholder: 'Password (minimum 6 characters)',
-    confirmPasswordPlaceholder: 'Confirm password',
-    signUpButton: 'Sign up',
-    hasAccount: 'Already have an account? ',
-    signInLink: 'Sign in',
-    errorEmptyFields: 'Please fill in all fields',
-    errorPasswordTooShort: 'Password must be at least 6 characters',
-    errorPasswordMismatch: 'Passwords do not match',
-    errorEmailExists: 'This email is already registered',
-    errorInvalidEmail: 'Invalid email format',
-    errorGeneric: 'Registration error. Please try again.',
-    backButton: '← Back',
-  },
-};
+import { useLanguage } from '@/contexts/LanguageContext';
+import { translate } from '@/constants/translations';
 
 export default function SignupScreen() {
   console.log('SignupScreen: Component rendered');
   
   const router = useRouter();
   const { signUp } = useAuth();
+  const { selectedLanguage } = useLanguage();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [language, setLanguage] = useState<string>('uk');
 
-  useEffect(() => {
-    loadLanguage();
-  }, []);
-
-  const loadLanguage = async () => {
-    try {
-      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-      console.log('SignupScreen: Loaded language from storage:', savedLanguage);
-      
-      if (savedLanguage) {
-        setLanguage(savedLanguage);
-      }
-    } catch (error) {
-      console.error('SignupScreen: Error loading language:', error);
-    }
-  };
+  console.log('SignupScreen: Current language:', selectedLanguage);
 
   const handleSignUp = async () => {
     console.log('SignupScreen: User tapped sign up button');
     console.log('SignupScreen: Email:', email);
     
-    const texts = TEXTS[language] || TEXTS.uk;
-    
     if (!email || !password || !confirmPassword) {
       console.log('SignupScreen: Validation failed - empty fields');
-      setError(texts.errorEmptyFields);
+      setError('Please fill in all fields');
       return;
     }
 
     if (password.length < 6) {
       console.log('SignupScreen: Validation failed - password too short');
-      setError(texts.errorPasswordTooShort);
+      setError('Password must be at least 6 characters');
       return;
     }
 
     if (password !== confirmPassword) {
       console.log('SignupScreen: Validation failed - passwords do not match');
-      setError(texts.errorPasswordMismatch);
+      setError('Passwords do not match');
       return;
     }
 
@@ -132,16 +62,7 @@ export default function SignupScreen() {
 
     if (signUpError) {
       console.error('SignupScreen: Sign up failed:', signUpError.message);
-      
-      let errorMessage = texts.errorGeneric;
-      
-      if (signUpError.message.includes('already registered')) {
-        errorMessage = texts.errorEmailExists;
-      } else if (signUpError.message.includes('Invalid email')) {
-        errorMessage = texts.errorInvalidEmail;
-      }
-      
-      setError(errorMessage);
+      setError('Registration error. Please try again.');
       setLoading(false);
     } else {
       console.log('SignupScreen: Sign up successful, navigating to home');
@@ -153,7 +74,14 @@ export default function SignupScreen() {
     router.back();
   };
 
-  const texts = TEXTS[language] || TEXTS.uk;
+  const titleText = translate('signup', 'title', selectedLanguage);
+  const emailPlaceholder = translate('signup', 'email', selectedLanguage);
+  const passwordPlaceholder = translate('signup', 'password', selectedLanguage);
+  const confirmPasswordPlaceholder = translate('signup', 'confirmPassword', selectedLanguage);
+  const signUpButtonText = translate('signup', 'signUpButton', selectedLanguage);
+  const alreadyAccountText = translate('signup', 'alreadyAccount', selectedLanguage);
+  const signInLinkText = translate('signup', 'signIn', selectedLanguage);
+  const backButtonText = translate('signup', 'back', selectedLanguage);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -163,7 +91,7 @@ export default function SignupScreen() {
         disabled={loading}
         activeOpacity={0.7}
       >
-        <Text style={styles.backButtonText}>{texts.backButton}</Text>
+        <Text style={styles.backButtonText}>{backButtonText}</Text>
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -175,13 +103,13 @@ export default function SignupScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>{texts.title}</Text>
+            <Text style={styles.title}>{titleText}</Text>
           </View>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder={texts.emailPlaceholder}
+              placeholder={emailPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -193,7 +121,7 @@ export default function SignupScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={texts.passwordPlaceholder}
+              placeholder={passwordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -205,7 +133,7 @@ export default function SignupScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={texts.confirmPasswordPlaceholder}
+              placeholder={confirmPasswordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -226,14 +154,14 @@ export default function SignupScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.signUpButtonText}>{texts.signUpButton}</Text>
+                <Text style={styles.signUpButtonText}>{signUpButtonText}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.loginLinkContainer}>
-              <Text style={styles.hasAccountText}>{texts.hasAccount}</Text>
+              <Text style={styles.hasAccountText}>{alreadyAccountText}</Text>
               <TouchableOpacity onPress={goToLogin} disabled={loading}>
-                <Text style={styles.loginLinkText}>{texts.signInLink}</Text>
+                <Text style={styles.loginLinkText}>{signInLinkText}</Text>
               </TouchableOpacity>
             </View>
           </View>

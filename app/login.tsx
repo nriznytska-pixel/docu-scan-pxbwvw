@@ -15,88 +15,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
-
-interface LanguageTexts {
-  emailPlaceholder: string;
-  passwordPlaceholder: string;
-  signInButton: string;
-  noAccount: string;
-  signUpLink: string;
-  errorEmptyFields: string;
-  errorInvalidCredentials: string;
-  errorEmailNotConfirmed: string;
-  errorGeneric: string;
-}
-
-const TEXTS: Record<string, LanguageTexts> = {
-  uk: {
-    emailPlaceholder: 'Email',
-    passwordPlaceholder: 'Пароль',
-    signInButton: 'Увійти',
-    noAccount: 'Немає акаунту? ',
-    signUpLink: 'Зареєструватися',
-    errorEmptyFields: 'Будь ласка, заповніть всі поля',
-    errorInvalidCredentials: 'Невірний email або пароль',
-    errorEmailNotConfirmed: 'Email не підтверджено',
-    errorGeneric: 'Помилка входу. Перевірте email та пароль.',
-  },
-  en: {
-    emailPlaceholder: 'Email',
-    passwordPlaceholder: 'Password',
-    signInButton: 'Sign in',
-    noAccount: 'No account? ',
-    signUpLink: 'Sign up',
-    errorEmptyFields: 'Please fill in all fields',
-    errorInvalidCredentials: 'Invalid email or password',
-    errorEmailNotConfirmed: 'Email not confirmed',
-    errorGeneric: 'Login error. Check your email and password.',
-  },
-};
+import { useLanguage } from '@/contexts/LanguageContext';
+import { translate } from '@/constants/translations';
 
 export default function LoginScreen() {
   console.log('LoginScreen: Component rendered');
   
   const router = useRouter();
   const { signIn } = useAuth();
+  const { selectedLanguage } = useLanguage();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [language, setLanguage] = useState<string>('uk');
-  const [languageLabel, setLanguageLabel] = useState<string>('Українська');
 
-  useEffect(() => {
-    loadLanguage();
-  }, []);
-
-  const loadLanguage = async () => {
-    try {
-      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-      console.log('LoginScreen: Loaded language from storage:', savedLanguage);
-      
-      if (savedLanguage) {
-        setLanguage(savedLanguage);
-        const label = savedLanguage === 'uk' ? 'Українська' : 'English';
-        setLanguageLabel(label);
-      }
-    } catch (error) {
-      console.error('LoginScreen: Error loading language:', error);
-    }
-  };
+  console.log('LoginScreen: Current language:', selectedLanguage);
 
   const handleSignIn = async () => {
     console.log('LoginScreen: User tapped sign in button');
     console.log('LoginScreen: Email:', email);
     
-    const texts = TEXTS[language] || TEXTS.uk;
+    const emailPlaceholder = translate('login', 'email', selectedLanguage);
+    const passwordPlaceholder = translate('login', 'password', selectedLanguage);
     
     if (!email || !password) {
       console.log('LoginScreen: Validation failed - empty fields');
-      setError(texts.errorEmptyFields);
+      setError('Please fill in all fields');
       return;
     }
 
@@ -107,16 +52,7 @@ export default function LoginScreen() {
 
     if (signInError) {
       console.error('LoginScreen: Sign in failed:', signInError.message);
-      
-      let errorMessage = texts.errorGeneric;
-      
-      if (signInError.message.includes('Invalid login credentials')) {
-        errorMessage = texts.errorInvalidCredentials;
-      } else if (signInError.message.includes('Email not confirmed')) {
-        errorMessage = texts.errorEmailNotConfirmed;
-      }
-      
-      setError(errorMessage);
+      setError('Invalid email or password');
       setLoading(false);
     } else {
       console.log('LoginScreen: Sign in successful, navigating to home');
@@ -133,12 +69,14 @@ export default function LoginScreen() {
     router.push('/language-select');
   };
 
-  const texts = TEXTS[language] || TEXTS.uk;
-  const titleText = '📬 DocuScan';
-  const subtitleText = language === 'uk' 
-    ? 'Ваш AI-помічник з офіційними листами'
-    : 'Your AI assistant for official letters';
-  const backButtonText = `← ${languageLabel}`;
+  const titleText = translate('login', 'title', selectedLanguage);
+  const subtitleText = translate('login', 'subtitle', selectedLanguage);
+  const emailPlaceholder = translate('login', 'email', selectedLanguage);
+  const passwordPlaceholder = translate('login', 'password', selectedLanguage);
+  const signInButtonText = translate('login', 'signIn', selectedLanguage);
+  const noAccountText = translate('login', 'noAccount', selectedLanguage);
+  const signUpLinkText = translate('login', 'signUp', selectedLanguage);
+  const backButtonText = translate('login', 'back', selectedLanguage);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -166,7 +104,7 @@ export default function LoginScreen() {
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder={texts.emailPlaceholder}
+              placeholder={emailPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -178,7 +116,7 @@ export default function LoginScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={texts.passwordPlaceholder}
+              placeholder={passwordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -199,14 +137,14 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.signInButtonText}>{texts.signInButton}</Text>
+                <Text style={styles.signInButtonText}>{signInButtonText}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.signupLinkContainer}>
-              <Text style={styles.noAccountText}>{texts.noAccount}</Text>
+              <Text style={styles.noAccountText}>{noAccountText}</Text>
               <TouchableOpacity onPress={goToSignup} disabled={loading}>
-                <Text style={styles.signupLinkText}>{texts.signUpLink}</Text>
+                <Text style={styles.signupLinkText}>{signUpLinkText}</Text>
               </TouchableOpacity>
             </View>
           </View>

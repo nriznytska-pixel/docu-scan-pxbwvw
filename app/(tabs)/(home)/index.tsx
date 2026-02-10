@@ -23,6 +23,7 @@ import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
 
 interface AnalysisData {
@@ -77,7 +78,6 @@ export default function HomeScreen() {
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
   const { user, signOut } = useAuth();
   
-  // Log the current language whenever component renders
   console.log('HomeScreen: Current selectedLanguage from context:', selectedLanguage);
   
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
@@ -123,7 +123,6 @@ export default function HomeScreen() {
       const scansCount = data?.length || 0;
       console.log('HomeScreen: Successfully fetched scans, count:', scansCount);
       
-      // Log the language of each scan for debugging
       if (data && data.length > 0) {
         console.log('HomeScreen: Recent scans with languages:');
         data.slice(0, 3).forEach((scan, index) => {
@@ -143,11 +142,9 @@ export default function HomeScreen() {
     console.log('HomeScreen: Initial load - fetching scans');
     fetchScans();
     
-    // Test backend API connection
     testBackendConnection();
   }, [fetchScans]);
 
-  // Set up real-time subscription for scan updates
   useEffect(() => {
     if (!user) {
       console.log('HomeScreen: No user, skipping real-time subscription');
@@ -156,7 +153,6 @@ export default function HomeScreen() {
 
     console.log('HomeScreen: Setting up real-time subscription for user:', user.id);
 
-    // Subscribe to changes in the scans table for this user
     const channel = supabase
       .channel('scans-changes')
       .on(
@@ -177,14 +173,12 @@ export default function HomeScreen() {
             console.log('HomeScreen: Scan updated:', payload.new);
             const updatedScan = payload.new as ScannedDocument;
             
-            // Update the documents list
             setDocuments((prev) => 
               prev.map((doc) => 
                 doc.id === updatedScan.id ? updatedScan : doc
               )
             );
             
-            // If this is the currently selected document, update it
             if (selectedDocument && selectedDocument.id === updatedScan.id) {
               console.log('HomeScreen: Updating selected document with new analysis');
               setSelectedDocument(updatedScan);
@@ -199,17 +193,14 @@ export default function HomeScreen() {
         console.log('HomeScreen: Subscription status:', status);
       });
 
-    // Cleanup subscription on unmount
     return () => {
       console.log('HomeScreen: Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [user, selectedDocument, fetchScans]);
 
-  // Poll for updates on the selected document if analysis is pending
   useEffect(() => {
     if (!selectedDocument || selectedDocument.analysis) {
-      // No need to poll if no document selected or analysis already exists
       return;
     }
 
@@ -234,7 +225,6 @@ export default function HomeScreen() {
           console.log('HomeScreen: Analysis found! Updating selected document');
           setSelectedDocument(data);
           
-          // Also update in the documents list
           setDocuments((prev) =>
             prev.map((doc) => (doc.id === data.id ? data : doc))
           );
@@ -242,9 +232,8 @@ export default function HomeScreen() {
       } catch (err) {
         console.error('HomeScreen: Exception while polling:', err);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 
-    // Cleanup interval on unmount or when analysis arrives
     return () => {
       console.log('HomeScreen: Stopping polling for scan analysis');
       clearInterval(pollInterval);
@@ -309,7 +298,6 @@ export default function HomeScreen() {
       const textContent = analysisJson.content[0].text;
       console.log('HomeScreen: Raw text content:', textContent);
       
-      // Extract JSON from markdown code block (```json ... ```)
       const jsonMatch = textContent.match(/```json\s*([\s\S]*?)\s*```/);
       
       let jsonString = textContent;
@@ -402,7 +390,6 @@ export default function HomeScreen() {
       const responseData = await response.json();
       console.log('HomeScreen: Webhook response data:', JSON.stringify(responseData, null, 2));
       
-      // Parse response with flexible content path handling
       const content = responseData?.data?.content || responseData?.content;
       if (content && content[0]) {
         const responseText = content[0].text;
@@ -567,7 +554,6 @@ export default function HomeScreen() {
     console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
     console.log('HomeScreen: Image URL:', imageUrl);
     
-    // Get the current language at the time of saving (not from closure)
     const languageToSave = selectedLanguage || DEFAULT_LANGUAGE;
     console.log('HomeScreen: 🔍 CRITICAL - Language to save:', languageToSave);
     console.log('HomeScreen: 🔍 CRITICAL - Language type:', typeof languageToSave);
@@ -590,7 +576,6 @@ export default function HomeScreen() {
     console.log('HomeScreen: 🔍 CRITICAL - Full data object to insert:', JSON.stringify(dataToInsert, null, 2));
     
     try {
-      // Save to Supabase (for image storage and analysis)
       const { data: insertData, error: insertError } = await supabase
         .from('scans')
         .insert([dataToInsert])
@@ -614,7 +599,6 @@ export default function HomeScreen() {
       console.log('HomeScreen: ========== INSERT SUCCESS ==========');
       console.log('HomeScreen: 🔍 CRITICAL - Data returned from Supabase:', JSON.stringify(insertData, null, 2));
       
-      // Verify the language was saved correctly
       if (insertData && insertData.length > 0) {
         const savedLanguage = insertData[0].language;
         console.log('HomeScreen: 🔍 CRITICAL - Language saved in database:', savedLanguage);
@@ -627,7 +611,6 @@ export default function HomeScreen() {
         }
       }
       
-      // Also create a scan record in the backend API with the language
       console.log('HomeScreen: Creating scan record in backend API');
       const backendUrl = Constants.expoConfig?.extra?.backendUrl;
       
@@ -650,7 +633,6 @@ export default function HomeScreen() {
           }
         } catch (backendError: any) {
           console.error('HomeScreen: Backend API exception:', backendError?.message);
-          // Don't fail the whole operation if backend API fails
         }
       } else {
         console.warn('HomeScreen: Backend URL not configured, skipping backend API call');
@@ -865,10 +847,12 @@ export default function HomeScreen() {
     }
   };
 
+  const headerTitle = translate('home', 'myLetters', selectedLanguage);
+  const scanButtonText = translate('home', 'scanLetter', selectedLanguage);
+  const settingsButtonText = translate('home', 'settings', selectedLanguage);
+
   const emptyStateText = 'Ще немає сканованих листів';
   const emptyStateSubtext = 'Натисніть кнопку нижче, щоб додати перший лист';
-  const headerTitle = 'Мій Помічник';
-  const scanButtonText = 'Сфотографувати лист';
   const galleryButtonText = 'Вибрати з галереї';
   const uploadingText = 'Завантаження...';
   const documentText = 'Лист';
@@ -884,7 +868,6 @@ export default function HomeScreen() {
     );
   }
 
-  // ===== SETTINGS SCREEN (embedded, no router) =====
   if (showSettings) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -892,7 +875,7 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => setShowSettings(false)} style={{ padding: 8 }}>
             <Text style={{ fontSize: 18, color: colors.primary, fontWeight: '600' }}>← Назад</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>⚙️ Налаштування</Text>
+          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>⚙️ {settingsButtonText}</Text>
           <View style={{ width: 70 }} />
         </View>
         <ScrollView style={styles.scrollView} contentContainerStyle={{ padding: 20 }}>
@@ -947,7 +930,6 @@ export default function HomeScreen() {
     );
   }
 
-  // ===== MAIN HOME SCREEN =====
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -1074,234 +1056,6 @@ export default function HomeScreen() {
           <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
         </TouchableOpacity>
       </View>
-
-      <Modal
-        visible={selectedDocument !== null}
-        animationType="fade"
-        transparent={false}
-        onRequestClose={closeDocumentView}
-      >
-        {selectedDocument && (() => {
-          const analysis = parseAnalysis(selectedDocument.analysis);
-          const analyzingText = '⏳ Аналізується...';
-          const urgencyWarning = '⚠️ Терміново!';
-          const deadlineLabel = '📅 Дедлайн:';
-          const amountLabel = '💶 Сума:';
-          const calendarButtonText = '📅 Додати в календар';
-          const stepsTitle = '📋 Що робити:';
-          const replyButtonText = '✍️ Відповісти';
-          
-          return (
-            <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={closeDocumentView} style={styles.closeButton}>
-                  <IconSymbol
-                    ios_icon_name="xmark"
-                    android_material_icon_name="close"
-                    size={24}
-                    color={colors.text}
-                  />
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Перегляд листа</Text>
-                <View style={styles.placeholder} />
-              </View>
-              <ScrollView
-                style={styles.modalScrollView}
-                contentContainerStyle={styles.modalScrollContent}
-              >
-                {detailImageError ? (
-                  <View style={styles.detailImagePlaceholder}>
-                    <Text style={styles.detailPlaceholderIcon}>📄</Text>
-                    <Text style={styles.detailPlaceholderText}>{imageDeletedText}</Text>
-                  </View>
-                ) : (
-                  <Image 
-                    source={{ uri: selectedDocument.image_url }} 
-                    style={styles.fullImage} 
-                    resizeMode="contain"
-                    onError={handleDetailImageError}
-                  />
-                )}
-                
-                {!selectedDocument.analysis && (
-                  <View style={styles.analysisContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 12 }} />
-                    <Text style={styles.analyzingText}>{analyzingText}</Text>
-                  </View>
-                )}
-                
-                {selectedDocument.analysis && !analysis && (
-                  <View style={styles.analysisContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 12 }} />
-                    <Text style={styles.analyzingText}>{analyzingText}</Text>
-                  </View>
-                )}
-                
-                {analysis && (
-                  <View style={styles.analysisContainer}>
-                    {analysis.urgency === 'high' && (
-                      <View style={styles.warningBanner}>
-                        <Text style={styles.warningText}>{urgencyWarning}</Text>
-                      </View>
-                    )}
-                    
-                    <Text style={styles.summaryText}>{analysis.summary_ua}</Text>
-                    
-                    {analysis.deadline && (
-                      <View style={styles.deadlineContainer}>
-                        <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>{deadlineLabel}</Text>
-                          <Text style={styles.detailValue}>{analysis.deadline}</Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.calendarButton}
-                          onPress={() => openGoogleCalendar(
-                            analysis.sender || 'Невідомий відправник',
-                            analysis.deadline!,
-                            analysis.summary_ua || ''
-                          )}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.calendarButtonText}>{calendarButtonText}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    
-                    {analysis.amount !== undefined && analysis.amount !== null && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>{amountLabel}</Text>
-                        <Text style={styles.detailValue}>{analysis.amount}</Text>
-                      </View>
-                    )}
-                    
-                    {analysis.templates && analysis.templates.length > 0 && (
-                      <View style={styles.templatesContainer}>
-                        {analysis.templates.map((template, index) => {
-                          const templateLabel = TEMPLATE_LABELS[template] || template;
-                          return (
-                            <TouchableOpacity 
-                              key={index} 
-                              style={styles.templateButton}
-                              onPress={() => handleTemplatePress(template, analysis)}
-                              disabled={generatingResponse}
-                            >
-                              <Text style={styles.templateButtonText}>{templateLabel}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    )}
-                    
-                    {analysis.steps && analysis.steps.length > 0 && (
-                      <View style={styles.stepsCard}>
-                        <Text style={styles.stepsTitle}>{stepsTitle}</Text>
-                        <View style={styles.stepsList}>
-                          {analysis.steps.map((step, index) => {
-                            const stepNumber = `${index + 1}.`;
-                            const checkboxIcon = '☐';
-                            return (
-                              <View key={index} style={styles.stepItem}>
-                                <Text style={styles.stepNumber}>{stepNumber}</Text>
-                                <Text style={styles.stepCheckbox}>{checkboxIcon}</Text>
-                                <Text style={styles.stepText}>{step}</Text>
-                              </View>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    )}
-                    
-                    <View style={styles.replyButtonContainer}>
-                      <TouchableOpacity 
-                        style={styles.replyButton}
-                        onPress={() => handleTemplatePress('reply', analysis)}
-                        disabled={generatingResponse}
-                      >
-                        <Text style={styles.replyButtonText}>{replyButtonText}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </ScrollView>
-            </SafeAreaView>
-          );
-        })()}
-      </Modal>
-
-      <Modal
-        visible={generatingResponse}
-        animationType="fade"
-        transparent={true}
-      >
-        <View style={styles.loadingModalOverlay}>
-          <View style={styles.loadingModalContent}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingModalText}>Генерую відповідь...</Text>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={showResponseModal}
-        animationType="fade"
-        transparent={false}
-        onRequestClose={closeResponseModal}
-      >
-        <SafeAreaView style={styles.responseModalContainer} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={closeResponseModal} style={styles.closeButton}>
-              <IconSymbol
-                ios_icon_name="xmark"
-                android_material_icon_name="close"
-                size={24}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Згенерована відповідь</Text>
-            <View style={styles.placeholder} />
-          </View>
-          <ScrollView style={styles.responseScrollView} contentContainerStyle={styles.responseScrollContent}>
-            <View style={{ backgroundColor: '#FFF3CD', padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#FFE69C' }}>
-              <Text style={{ fontSize: 14, color: '#664D03', lineHeight: 20 }}>
-                ⚠️ Це приклад листа-відповіді, а не юридична порада. Перевірте текст перед відправкою та за потреби зверніться до фахівця.
-              </Text>
-            </View>
-            <Text style={styles.responseText}>{generatedResponse}</Text>
-          </ScrollView>
-          <View style={styles.responseActions}>
-            <TouchableOpacity style={styles.copyButton} onPress={copyToClipboard}>
-              <Text style={styles.copyButtonText}>📋 Копіювати</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.emailButton} onPress={sendEmail}>
-              <Text style={styles.emailButtonText}>✉️ Надіслати email</Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal
-        visible={showDeleteModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={cancelDelete}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Видалити лист?</Text>
-            <Text style={styles.deleteModalMessage}>
-              Цю дію не можна скасувати.
-            </Text>
-            <View style={styles.deleteModalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={cancelDelete}>
-                <Text style={styles.cancelButtonText}>Скасувати</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmDeleteButton} onPress={deleteDocument}>
-                <Text style={styles.confirmDeleteButtonText}>Видалити</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <Modal
         visible={showPaywall}
@@ -1541,334 +1295,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
     marginLeft: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: colors.backgroundAlt,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  closeButton: {
-    padding: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    flexGrow: 1,
-  },
-  fullImage: {
-    width: '100%',
-    height: 400,
-    backgroundColor: colors.background,
-  },
-  detailImagePlaceholder: {
-    width: '100%',
-    height: 400,
-    backgroundColor: '#E5E5E5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  detailPlaceholderIcon: {
-    fontSize: 80,
-    marginBottom: 16,
-  },
-  detailPlaceholderText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  analysisContainer: {
-    padding: 20,
-    backgroundColor: colors.backgroundAlt,
-  },
-  analyzingText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  warningBanner: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  warningText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  summaryText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text,
-    marginBottom: 16,
-  },
-  deadlineContainer: {
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  detailLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginRight: 8,
-  },
-  detailValue: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  calendarButton: {
-    backgroundColor: '#34C759',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  calendarButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  templatesContainer: {
-    marginTop: 16,
-    gap: 12,
-  },
-  templateButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  templateButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  stepsCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  stepsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  stepsList: {
-    gap: 12,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  stepNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginRight: 8,
-    minWidth: 24,
-  },
-  stepCheckbox: {
-    fontSize: 16,
-    color: colors.text,
-    marginRight: 8,
-  },
-  stepText: {
-    fontSize: 16,
-    color: colors.text,
-    flex: 1,
-    lineHeight: 22,
-  },
-  replyButtonContainer: {
-    marginTop: 16,
-  },
-  replyButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  replyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  loadingModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingModalContent: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    minWidth: 200,
-  },
-  loadingModalText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-  },
-  responseModalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  responseScrollView: {
-    flex: 1,
-  },
-  responseScrollContent: {
-    padding: 20,
-  },
-  responseText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text,
-  },
-  responseActions: {
-    padding: 20,
-    backgroundColor: colors.backgroundAlt,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: 12,
-  },
-  copyButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  copyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  emailButton: {
-    backgroundColor: '#34C759',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  emailButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  deleteModalContent: {
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  deleteModalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  deleteModalMessage: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  deleteModalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  confirmDeleteButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: colors.error,
-    alignItems: 'center',
-  },
-  confirmDeleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
 });
