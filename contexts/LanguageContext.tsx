@@ -10,12 +10,15 @@ export interface LanguageOption {
 
 export const LANGUAGES: LanguageOption[] = [
   { code: 'uk', label: 'Українська', emoji: '🇺🇦' },
+  { code: 'ru', label: 'Русский', emoji: '🇷🇺' },
   { code: 'en', label: 'English', emoji: '🇬🇧' },
   { code: 'nl', label: 'Nederlands', emoji: '🇳🇱' },
-  { code: 'ar', label: 'العربية', emoji: '🇸🇦' },
-  { code: 'tr', label: 'Türkçe', emoji: '🇹🇷' },
-  { code: 'ti', label: 'ትግርኛ', emoji: '🇪🇷' },
   { code: 'pl', label: 'Polski', emoji: '🇵🇱' },
+  { code: 'tr', label: 'Türkçe', emoji: '🇹🇷' },
+  { code: 'de', label: 'Deutsch', emoji: '🇩🇪' },
+  { code: 'fr', label: 'Français', emoji: '🇫🇷' },
+  { code: 'es', label: 'Español', emoji: '🇪🇸' },
+  { code: 'ar', label: 'العربية', emoji: '🇸🇦' },
 ];
 
 const LANGUAGE_STORAGE_KEY = 'selectedLanguage';

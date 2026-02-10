@@ -18,12 +18,15 @@ import { translate } from '@/constants/translations';
 
 const LANGUAGE_OPTIONS = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
   { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
-  { code: 'ar', label: 'العربية', flag: '🇸🇦' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷' },
   { code: 'pl', label: 'Polski', flag: '🇵🇱' },
+  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'ar', label: 'العربية', flag: '🇸🇦' },
 ];
 
 export default function SettingsScreen() {
@@ -99,7 +102,7 @@ export default function SettingsScreen() {
             <View style={styles.languageList}>
               {LANGUAGE_OPTIONS.map((language) => {
                 const isSelected = selectedLanguage === language.code;
-                const buttonText = `${language.flag} ${language.label}`;
+                const buttonText = `${language.flag} ${language.code.toUpperCase()} ${language.label}`;
                 
                 return (
                   <TouchableOpacity
