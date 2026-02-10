@@ -742,7 +742,7 @@ export default function HomeScreen() {
   };
 
   const viewDocument = (doc: ScannedDocument) => {
-    console.log('HomeScreen (iOS): Opening document view for ID:', doc.id);
+    console.log('HomeScreen (iOS): User tapped letter card, opening detail view for ID:', doc.id);
     console.log('HomeScreen (iOS): Document language:', doc.language || 'null');
     console.log('HomeScreen (iOS): Document has analysis:', !!doc.analysis);
     setSelectedDocument(doc);
@@ -958,6 +958,321 @@ export default function HomeScreen() {
           <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showPaywall}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPaywall(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }} edges={['top', 'bottom']}>
+          <View style={{ flex: 1, padding: 20 }}>
+            <TouchableOpacity onPress={() => setShowPaywall(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
+              <Text style={{ fontSize: 24, color: '#64748B' }}>✕</Text>
+            </TouchableOpacity>
+            
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <Text style={{ fontSize: 48 }}>📄</Text>
+              <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1E293B', marginTop: 16, textAlign: 'center' }}>Безлімітний доступ</Text>
+              <Text style={{ fontSize: 16, color: '#64748B', marginTop: 8, textAlign: 'center' }}>Ви використали {scanCount} з {FREE_SCAN_LIMIT} безкоштовних сканувань</Text>
+            </View>
+
+            <View style={{ marginTop: 32, gap: 12 }}>
+              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#3B82F6', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щомісячно</Text>
+                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>Скасувати будь-коли</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€4.99</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#1D4ED8', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щорічно</Text>
+                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>2 місяці безкоштовно</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€34.99</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#059669', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Назавжди</Text>
+                  <Text style={{ fontSize: 14, color: '#A7F3D0' }}>Одноразова оплата</Text>
+                </View>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€29.99</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginTop: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center' }}>✓ Безлімітні сканування  ✓ Усі мови перекладу  ✓ Генерація відповідей</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={!!selectedDocument}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={closeDocumentView}
+      >
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={closeDocumentView}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.backButtonText}>← Назад</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Деталі листа</Text>
+            <View style={{ width: 80 }} />
+          </View>
+
+          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalContent}>
+            {selectedDocument && (
+              <>
+                {detailImageError ? (
+                  <View style={styles.detailImagePlaceholder}>
+                    <Text style={styles.detailPlaceholderIcon}>📄</Text>
+                    <Text style={styles.detailPlaceholderText}>{imageDeletedText}</Text>
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: selectedDocument.image_url }}
+                    style={styles.detailImage}
+                    resizeMode="contain"
+                    onError={handleDetailImageError}
+                  />
+                )}
+
+                <View style={styles.detailInfo}>
+                  <Text style={styles.detailDate}>
+                    {formatDate(selectedDocument.created_at)}
+                  </Text>
+                </View>
+
+                {selectedDocument.analysis ? (
+                  <>
+                    {(() => {
+                      const analysis = parseAnalysis(selectedDocument.analysis);
+                      if (!analysis) {
+                        return (
+                          <View style={styles.analysisSection}>
+                            <Text style={styles.analysisSectionTitle}>Аналіз</Text>
+                            <Text style={styles.analysisError}>
+                              Не вдалося розпізнати аналіз
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      const senderText = analysis.sender || 'Невідомо';
+                      const typeText = analysis.type || 'Невідомо';
+                      const summaryText = analysis.summary_ua || 'Немає опису';
+                      const deadlineText = analysis.deadline || 'Не вказано';
+                      const amountText = analysis.amount ? `€${analysis.amount}` : 'Не вказано';
+                      const urgencyText = analysis.urgency === 'high' ? '🔴 Високий' : analysis.urgency === 'medium' ? '🟡 Середній' : '🟢 Низький';
+
+                      return (
+                        <>
+                          <View style={styles.analysisSection}>
+                            <Text style={styles.analysisSectionTitle}>📋 Аналіз листа</Text>
+                            
+                            <View style={styles.analysisRow}>
+                              <Text style={styles.analysisLabel}>Відправник:</Text>
+                              <Text style={styles.analysisValue}>{senderText}</Text>
+                            </View>
+
+                            <View style={styles.analysisRow}>
+                              <Text style={styles.analysisLabel}>Тип:</Text>
+                              <Text style={styles.analysisValue}>{typeText}</Text>
+                            </View>
+
+                            <View style={styles.analysisRow}>
+                              <Text style={styles.analysisLabel}>Опис:</Text>
+                              <Text style={styles.analysisValue}>{summaryText}</Text>
+                            </View>
+
+                            <View style={styles.analysisRow}>
+                              <Text style={styles.analysisLabel}>Дедлайн:</Text>
+                              <Text style={styles.analysisValue}>{deadlineText}</Text>
+                            </View>
+
+                            <View style={styles.analysisRow}>
+                              <Text style={styles.analysisLabel}>Сума:</Text>
+                              <Text style={styles.analysisValue}>{amountText}</Text>
+                            </View>
+
+                            <View style={styles.analysisRow}>
+                              <Text style={styles.analysisLabel}>Терміновість:</Text>
+                              <Text style={styles.analysisValue}>{urgencyText}</Text>
+                            </View>
+
+                            {analysis.deadline && analysis.deadline !== 'Не вказано' && (
+                              <TouchableOpacity
+                                style={styles.calendarButton}
+                                onPress={() => openGoogleCalendar(senderText, analysis.deadline!, summaryText)}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  ios_icon_name="calendar"
+                                  android_material_icon_name="calendar-today"
+                                  size={20}
+                                  color="#FFFFFF"
+                                />
+                                <Text style={styles.calendarButtonText}>Додати в календар</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+
+                          {analysis.templates && analysis.templates.length > 0 && (
+                            <View style={styles.templatesSection}>
+                              <Text style={styles.templatesSectionTitle}>✍️ Шаблони відповідей</Text>
+                              {analysis.templates.map((template, idx) => {
+                                const templateLabel = TEMPLATE_LABELS[template] || template;
+                                return (
+                                  <TouchableOpacity
+                                    key={idx}
+                                    style={styles.templateButton}
+                                    onPress={() => handleTemplatePress(template, analysis)}
+                                    activeOpacity={0.7}
+                                    disabled={generatingResponse}
+                                  >
+                                    <Text style={styles.templateButtonText}>{templateLabel}</Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                              {generatingResponse && (
+                                <View style={styles.generatingContainer}>
+                                  <ActivityIndicator size="small" color={colors.primary} />
+                                  <Text style={styles.generatingText}>Генерація відповіді...</Text>
+                                </View>
+                              )}
+                            </View>
+                          )}
+
+                          {analysis.steps && analysis.steps.length > 0 && (
+                            <View style={styles.stepsSection}>
+                              <Text style={styles.stepsSectionTitle}>📝 Рекомендовані кроки</Text>
+                              {analysis.steps.map((step, idx) => {
+                                const stepNumber = `${idx + 1}.`;
+                                return (
+                                  <View key={idx} style={styles.stepRow}>
+                                    <Text style={styles.stepNumber}>{stepNumber}</Text>
+                                    <Text style={styles.stepText}>{step}</Text>
+                                  </View>
+                                );
+                              })}
+                            </View>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <View style={styles.analysisSection}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={styles.analyzingText}>Аналіз листа...</Text>
+                    <Text style={styles.analyzingSubtext}>
+                      Це може зайняти кілька секунд
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showResponseModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={closeResponseModal}
+      >
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={closeResponseModal}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.backButtonText}>← Назад</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Згенерована відповідь</Text>
+            <View style={{ width: 80 }} />
+          </View>
+
+          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalContent}>
+            <View style={styles.responseContainer}>
+              <Text style={styles.responseText}>{generatedResponse}</Text>
+            </View>
+
+            <View style={styles.responseActions}>
+              <TouchableOpacity
+                style={styles.responseActionButton}
+                onPress={copyToClipboard}
+                activeOpacity={0.7}
+              >
+                <IconSymbol
+                  ios_icon_name="doc.on.doc"
+                  android_material_icon_name="content-copy"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text style={styles.responseActionText}>Копіювати</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.responseActionButton}
+                onPress={sendEmail}
+                activeOpacity={0.7}
+              >
+                <IconSymbol
+                  ios_icon_name="envelope"
+                  android_material_icon_name="email"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text style={styles.responseActionText}>Надіслати email</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showDeleteModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>Видалити лист?</Text>
+            <Text style={styles.deleteModalMessage}>
+              Ви впевнені, що хочете видалити цей лист? Цю дію не можна скасувати.
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.deleteModalCancelButton}
+                onPress={cancelDelete}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteModalCancelText}>Скасувати</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteModalConfirmButton}
+                onPress={deleteDocument}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteModalConfirmText}>Видалити</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1142,5 +1457,294 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
     marginLeft: 8,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: colors.backgroundAlt,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backButton: {
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalContent: {
+    padding: 20,
+  },
+  detailImage: {
+    width: '100%',
+    height: 400,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  detailImagePlaceholder: {
+    width: '100%',
+    height: 400,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  detailPlaceholderIcon: {
+    fontSize: 80,
+    marginBottom: 12,
+  },
+  detailPlaceholderText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  detailInfo: {
+    marginBottom: 20,
+  },
+  detailDate: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  analysisSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  analysisSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  analysisRow: {
+    marginBottom: 12,
+  },
+  analysisLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  analysisValue: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  analysisError: {
+    fontSize: 14,
+    color: colors.error,
+    textAlign: 'center',
+  },
+  analyzingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  analyzingSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  calendarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  calendarButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  templatesSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  templatesSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  templateButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  templateButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  generatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  generatingText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginLeft: 8,
+  },
+  stepsSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stepsSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginRight: 8,
+    minWidth: 24,
+  },
+  stepText: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  responseContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  responseText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 22,
+  },
+  responseActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  responseActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundAlt,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  responseActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginLeft: 8,
+  },
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  deleteModalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  deleteModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  deleteModalCancelButton: {
+    flex: 1,
+    backgroundColor: colors.backgroundAlt,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  deleteModalCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  deleteModalConfirmButton: {
+    flex: 1,
+    backgroundColor: colors.error,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  deleteModalConfirmText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
 });
