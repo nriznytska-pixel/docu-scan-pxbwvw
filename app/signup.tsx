@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,6 +15,58 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
+
+interface LanguageTexts {
+  title: string;
+  emailPlaceholder: string;
+  passwordPlaceholder: string;
+  confirmPasswordPlaceholder: string;
+  signUpButton: string;
+  hasAccount: string;
+  signInLink: string;
+  errorEmptyFields: string;
+  errorPasswordTooShort: string;
+  errorPasswordMismatch: string;
+  errorEmailExists: string;
+  errorInvalidEmail: string;
+  errorGeneric: string;
+}
+
+const TEXTS: Record<string, LanguageTexts> = {
+  uk: {
+    title: '📬 Реєстрація',
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Пароль (мінімум 6 символів)',
+    confirmPasswordPlaceholder: 'Підтвердіть пароль',
+    signUpButton: 'Зареєструватися',
+    hasAccount: 'Вже є акаунт? ',
+    signInLink: 'Увійти',
+    errorEmptyFields: 'Будь ласка, заповніть всі поля',
+    errorPasswordTooShort: 'Пароль повинен містити мінімум 6 символів',
+    errorPasswordMismatch: 'Паролі не співпадають',
+    errorEmailExists: 'Цей email вже зареєстрований',
+    errorInvalidEmail: 'Невірний формат email',
+    errorGeneric: 'Помилка реєстрації. Спробуйте ще раз.',
+  },
+  en: {
+    title: '📬 Sign Up',
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Password (minimum 6 characters)',
+    confirmPasswordPlaceholder: 'Confirm password',
+    signUpButton: 'Sign up',
+    hasAccount: 'Already have an account? ',
+    signInLink: 'Sign in',
+    errorEmptyFields: 'Please fill in all fields',
+    errorPasswordTooShort: 'Password must be at least 6 characters',
+    errorPasswordMismatch: 'Passwords do not match',
+    errorEmailExists: 'This email is already registered',
+    errorInvalidEmail: 'Invalid email format',
+    errorGeneric: 'Registration error. Please try again.',
+  },
+};
 
 export default function SignupScreen() {
   console.log('SignupScreen: Component rendered');
@@ -27,26 +79,46 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [language, setLanguage] = useState<string>('uk');
+
+  useEffect(() => {
+    loadLanguage();
+  }, []);
+
+  const loadLanguage = async () => {
+    try {
+      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      console.log('SignupScreen: Loaded language from storage:', savedLanguage);
+      
+      if (savedLanguage) {
+        setLanguage(savedLanguage);
+      }
+    } catch (error) {
+      console.error('SignupScreen: Error loading language:', error);
+    }
+  };
 
   const handleSignUp = async () => {
-    console.log('SignupScreen: User tapped "Зареєструватися" button');
+    console.log('SignupScreen: User tapped sign up button');
     console.log('SignupScreen: Email:', email);
+    
+    const texts = TEXTS[language] || TEXTS.uk;
     
     if (!email || !password || !confirmPassword) {
       console.log('SignupScreen: Validation failed - empty fields');
-      setError('Будь ласка, заповніть всі поля');
+      setError(texts.errorEmptyFields);
       return;
     }
 
     if (password.length < 6) {
       console.log('SignupScreen: Validation failed - password too short');
-      setError('Пароль повинен містити мінімум 6 символів');
+      setError(texts.errorPasswordTooShort);
       return;
     }
 
     if (password !== confirmPassword) {
       console.log('SignupScreen: Validation failed - passwords do not match');
-      setError('Паролі не співпадають');
+      setError(texts.errorPasswordMismatch);
       return;
     }
 
@@ -58,34 +130,27 @@ export default function SignupScreen() {
     if (signUpError) {
       console.error('SignupScreen: Sign up failed:', signUpError.message);
       
-      let errorMessage = 'Помилка реєстрації. Спробуйте ще раз.';
+      let errorMessage = texts.errorGeneric;
       
       if (signUpError.message.includes('already registered')) {
-        errorMessage = 'Цей email вже зареєстрований';
+        errorMessage = texts.errorEmailExists;
       } else if (signUpError.message.includes('Invalid email')) {
-        errorMessage = 'Невірний формат email';
+        errorMessage = texts.errorInvalidEmail;
       }
       
       setError(errorMessage);
       setLoading(false);
     } else {
       console.log('SignupScreen: Sign up successful, navigating to home');
-      // Navigation will happen automatically via AuthContext
     }
   };
 
   const goToLogin = () => {
-    console.log('SignupScreen: User tapped "Увійти" link');
+    console.log('SignupScreen: User tapped sign in link');
     router.back();
   };
 
-  const titleText = '📬 Реєстрація';
-  const emailPlaceholder = 'Email';
-  const passwordPlaceholder = 'Пароль (мінімум 6 символів)';
-  const confirmPasswordPlaceholder = 'Підтвердіть пароль';
-  const signUpButtonText = 'Зареєструватися';
-  const hasAccountText = 'Вже є акаунт? ';
-  const signInLinkText = 'Увійти';
+  const texts = TEXTS[language] || TEXTS.uk;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -98,13 +163,13 @@ export default function SignupScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>{titleText}</Text>
+            <Text style={styles.title}>{texts.title}</Text>
           </View>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder={emailPlaceholder}
+              placeholder={texts.emailPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -116,7 +181,7 @@ export default function SignupScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={passwordPlaceholder}
+              placeholder={texts.passwordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -128,7 +193,7 @@ export default function SignupScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={confirmPasswordPlaceholder}
+              placeholder={texts.confirmPasswordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -149,14 +214,14 @@ export default function SignupScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.signUpButtonText}>{signUpButtonText}</Text>
+                <Text style={styles.signUpButtonText}>{texts.signUpButton}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.loginLinkContainer}>
-              <Text style={styles.hasAccountText}>{hasAccountText}</Text>
+              <Text style={styles.hasAccountText}>{texts.hasAccount}</Text>
               <TouchableOpacity onPress={goToLogin} disabled={loading}>
-                <Text style={styles.loginLinkText}>{signInLinkText}</Text>
+                <Text style={styles.loginLinkText}>{texts.signInLink}</Text>
               </TouchableOpacity>
             </View>
           </View>

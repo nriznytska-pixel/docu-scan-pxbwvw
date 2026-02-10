@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,6 +15,46 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
+
+interface LanguageTexts {
+  emailPlaceholder: string;
+  passwordPlaceholder: string;
+  signInButton: string;
+  noAccount: string;
+  signUpLink: string;
+  errorEmptyFields: string;
+  errorInvalidCredentials: string;
+  errorEmailNotConfirmed: string;
+  errorGeneric: string;
+}
+
+const TEXTS: Record<string, LanguageTexts> = {
+  uk: {
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Пароль',
+    signInButton: 'Увійти',
+    noAccount: 'Немає акаунту? ',
+    signUpLink: 'Зареєструватися',
+    errorEmptyFields: 'Будь ласка, заповніть всі поля',
+    errorInvalidCredentials: 'Невірний email або пароль',
+    errorEmailNotConfirmed: 'Email не підтверджено',
+    errorGeneric: 'Помилка входу. Перевірте email та пароль.',
+  },
+  en: {
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Password',
+    signInButton: 'Sign in',
+    noAccount: 'No account? ',
+    signUpLink: 'Sign up',
+    errorEmptyFields: 'Please fill in all fields',
+    errorInvalidCredentials: 'Invalid email or password',
+    errorEmailNotConfirmed: 'Email not confirmed',
+    errorGeneric: 'Login error. Check your email and password.',
+  },
+};
 
 export default function LoginScreen() {
   console.log('LoginScreen: Component rendered');
@@ -26,14 +66,37 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [language, setLanguage] = useState<string>('uk');
+  const [languageLabel, setLanguageLabel] = useState<string>('🇺🇦 Українська');
+
+  useEffect(() => {
+    loadLanguage();
+  }, []);
+
+  const loadLanguage = async () => {
+    try {
+      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      console.log('LoginScreen: Loaded language from storage:', savedLanguage);
+      
+      if (savedLanguage) {
+        setLanguage(savedLanguage);
+        const label = savedLanguage === 'uk' ? '🇺🇦 Українська' : '🇬🇧 English';
+        setLanguageLabel(label);
+      }
+    } catch (error) {
+      console.error('LoginScreen: Error loading language:', error);
+    }
+  };
 
   const handleSignIn = async () => {
-    console.log('LoginScreen: User tapped "Увійти" button');
+    console.log('LoginScreen: User tapped sign in button');
     console.log('LoginScreen: Email:', email);
+    
+    const texts = TEXTS[language] || TEXTS.uk;
     
     if (!email || !password) {
       console.log('LoginScreen: Validation failed - empty fields');
-      setError('Будь ласка, заповніть всі поля');
+      setError(texts.errorEmptyFields);
       return;
     }
 
@@ -45,34 +108,36 @@ export default function LoginScreen() {
     if (signInError) {
       console.error('LoginScreen: Sign in failed:', signInError.message);
       
-      let errorMessage = 'Помилка входу. Перевірте email та пароль.';
+      let errorMessage = texts.errorGeneric;
       
       if (signInError.message.includes('Invalid login credentials')) {
-        errorMessage = 'Невірний email або пароль';
+        errorMessage = texts.errorInvalidCredentials;
       } else if (signInError.message.includes('Email not confirmed')) {
-        errorMessage = 'Email не підтверджено';
+        errorMessage = texts.errorEmailNotConfirmed;
       }
       
       setError(errorMessage);
       setLoading(false);
     } else {
       console.log('LoginScreen: Sign in successful, navigating to home');
-      // Navigation will happen automatically via AuthContext
     }
   };
 
   const goToSignup = () => {
-    console.log('LoginScreen: User tapped "Зареєструватися" link');
+    console.log('LoginScreen: User tapped sign up link');
     router.push('/signup');
   };
 
+  const goToLanguageSelect = () => {
+    console.log('LoginScreen: User tapped language badge');
+    router.push('/language-select');
+  };
+
+  const texts = TEXTS[language] || TEXTS.uk;
   const titleText = '📬 DocuScan';
-  const subtitleText = 'Ваш AI-помічник з офіційними листами';
-  const emailPlaceholder = 'Email';
-  const passwordPlaceholder = 'Пароль';
-  const signInButtonText = 'Увійти';
-  const noAccountText = 'Немає акаунту? ';
-  const signUpLinkText = 'Зареєструватися';
+  const subtitleText = language === 'uk' 
+    ? 'Ваш AI-помічник з офіційними листами'
+    : 'Your AI assistant for official letters';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -87,12 +152,20 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>{titleText}</Text>
             <Text style={styles.subtitle}>{subtitleText}</Text>
+            
+            <TouchableOpacity
+              style={styles.languageBadge}
+              onPress={goToLanguageSelect}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.languageBadgeText}>{languageLabel}</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder={emailPlaceholder}
+              placeholder={texts.emailPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -104,7 +177,7 @@ export default function LoginScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder={passwordPlaceholder}
+              placeholder={texts.passwordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -125,14 +198,14 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.signInButtonText}>{signInButtonText}</Text>
+                <Text style={styles.signInButtonText}>{texts.signInButton}</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.signupLinkContainer}>
-              <Text style={styles.noAccountText}>{noAccountText}</Text>
+              <Text style={styles.noAccountText}>{texts.noAccount}</Text>
               <TouchableOpacity onPress={goToSignup} disabled={loading}>
-                <Text style={styles.signupLinkText}>{signUpLinkText}</Text>
+                <Text style={styles.signupLinkText}>{texts.signUpLink}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -171,6 +244,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  languageBadge: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  languageBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
   },
   form: {
     width: '100%',

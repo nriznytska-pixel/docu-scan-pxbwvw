@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import "react-native-reanimated";
@@ -18,30 +18,53 @@ import {
 } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useNetworkState } from "expo-network";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [hasLanguage, setHasLanguage] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (loading) {
-      console.log('RootLayoutNav: Auth loading, waiting...');
+    checkLanguageSelection();
+  }, []);
+
+  const checkLanguageSelection = async () => {
+    try {
+      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      console.log('RootLayoutNav: Checking language selection:', savedLanguage);
+      setHasLanguage(!!savedLanguage);
+    } catch (error) {
+      console.error('RootLayoutNav: Error checking language:', error);
+      setHasLanguage(false);
+    }
+  };
+
+  useEffect(() => {
+    if (loading || hasLanguage === null) {
+      console.log('RootLayoutNav: Auth or language loading, waiting...');
       return;
     }
 
     const inAuthGroup = segments[0] === '(tabs)';
+    const onLanguageSelect = segments[0] === 'language-select';
     
-    console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'inAuthGroup:', inAuthGroup);
+    console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'inAuthGroup:', inAuthGroup, 'hasLanguage:', hasLanguage);
 
-    if (!user && inAuthGroup) {
+    if (!hasLanguage && !onLanguageSelect) {
+      console.log('RootLayoutNav: No language selected, redirecting to language-select');
+      router.replace('/language-select');
+    } else if (!user && inAuthGroup) {
       console.log('RootLayoutNav: No user, redirecting to login');
       router.replace('/login');
-    } else if (user && !inAuthGroup) {
+    } else if (user && !inAuthGroup && hasLanguage) {
       console.log('RootLayoutNav: User logged in, redirecting to home');
       router.replace('/(tabs)/(home)');
     }
-  }, [user, loading, segments, router]);
+  }, [user, loading, segments, router, hasLanguage]);
 
   return (
     <Stack
@@ -49,6 +72,7 @@ function RootLayoutNav() {
         headerShown: false,
       }}
     >
+      <Stack.Screen name="language-select" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="signup" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
