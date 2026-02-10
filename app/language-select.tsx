@@ -19,16 +19,15 @@ interface LanguageOption {
   label: string;
   flag: string;
   enabled: boolean;
-  comingSoonText?: string;
 }
 
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦', enabled: true },
   { code: 'en', label: 'English', flag: '🇬🇧', enabled: true },
-  { code: 'ar', label: 'العربية', flag: '🇸🇦', enabled: false, comingSoonText: 'Binnenkort beschikbaar' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷', enabled: false, comingSoonText: 'Binnenkort beschikbaar' },
-  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷', enabled: false, comingSoonText: 'Binnenkort beschikbaar' },
-  { code: 'pl', label: 'Polski', flag: '🇵🇱', enabled: false, comingSoonText: 'Binnenkort beschikbaar' },
+  { code: 'ar', label: 'العربية', flag: '🇸🇦', enabled: true },
+  { code: 'tr', label: 'Türkçe', flag: '🇹🇷', enabled: true },
+  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷', enabled: true },
+  { code: 'pl', label: 'Polski', flag: '🇵🇱', enabled: true },
 ];
 
 const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
@@ -102,39 +101,25 @@ export default function LanguageSelectScreen() {
         <View style={styles.languageList}>
           {LANGUAGE_OPTIONS.map((language, index) => {
             const isSelected = selectedLanguage === language.code;
-            const cardStyle = language.enabled
-              ? isSelected
-                ? styles.languageCardSelected
-                : styles.languageCard
-              : styles.languageCardDisabled;
+            const cardStyle = isSelected
+              ? styles.languageCardSelected
+              : styles.languageCard;
 
             return (
               <TouchableOpacity
                 key={index}
                 style={cardStyle}
                 onPress={() => handleLanguageSelect(language.code, language.enabled)}
-                disabled={!language.enabled}
                 activeOpacity={0.7}
               >
                 <View style={styles.languageCardContent}>
                   <Text style={styles.languageFlag}>{language.flag}</Text>
                   <View style={styles.languageTextContainer}>
-                    <Text
-                      style={
-                        language.enabled
-                          ? styles.languageLabel
-                          : styles.languageLabelDisabled
-                      }
-                    >
+                    <Text style={styles.languageLabel}>
                       {language.label}
                     </Text>
-                    {!language.enabled && language.comingSoonText && (
-                      <Text style={styles.comingSoonText}>
-                        {language.comingSoonText}
-                      </Text>
-                    )}
                   </View>
-                  {isSelected && language.enabled && (
+                  {isSelected && (
                     <IconSymbol
                       ios_icon_name="checkmark.circle.fill"
                       android_material_icon_name="check-circle"
@@ -238,15 +223,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
-  languageCardDisabled: {
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    opacity: 0.5,
-  },
   languageCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,16 +238,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-  },
-  languageLabelDisabled: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  comingSoonText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
   },
   continueButton: {
     backgroundColor: colors.primary,

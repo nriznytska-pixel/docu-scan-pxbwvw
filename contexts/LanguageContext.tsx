@@ -10,17 +10,14 @@ export interface LanguageOption {
 
 export const LANGUAGES: LanguageOption[] = [
   { code: 'uk', label: 'Українська', emoji: '🇺🇦' },
-  { code: 'ru', label: 'Русский', emoji: '🇷🇺' },
   { code: 'en', label: 'English', emoji: '🇬🇧' },
-  { code: 'pl', label: 'Polski', emoji: '🇵🇱' },
-  { code: 'tr', label: 'Türkçe', emoji: '🇹🇷' },
-  { code: 'de', label: 'Deutsch', emoji: '🇩🇪' },
-  { code: 'fr', label: 'Français', emoji: '🇫🇷' },
-  { code: 'es', label: 'Español', emoji: '🇪🇸' },
   { code: 'ar', label: 'العربية', emoji: '🇸🇦' },
+  { code: 'tr', label: 'Türkçe', emoji: '🇹🇷' },
+  { code: 'ti', label: 'ትግርኛ', emoji: '🇪🇷' },
+  { code: 'pl', label: 'Polski', emoji: '🇵🇱' },
 ];
 
-const LANGUAGE_STORAGE_KEY = '@app_language';
+const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
 
 interface LanguageContextType {
   selectedLanguage: string;
@@ -45,7 +42,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       console.log('LanguageContext: 🔍 Raw value from AsyncStorage:', savedLanguage);
       
       if (savedLanguage) {
-        // Validate that it's a valid language code
         const validCodes = LANGUAGES.map(lang => lang.code);
         if (validCodes.includes(savedLanguage)) {
           console.log('LanguageContext: ✅ Valid language loaded from storage:', savedLanguage);
@@ -74,7 +70,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     console.log('LanguageContext: 🔍 CRITICAL - setSelectedLanguage called with:', code);
     console.log('LanguageContext: 🔍 CRITICAL - Code type:', typeof code);
     
-    // Validate that the code is one of the valid language codes
     const validCodes = LANGUAGES.map(lang => lang.code);
     if (!validCodes.includes(code)) {
       console.error('LanguageContext: ⚠️ WARNING - Invalid language code:', code);
@@ -89,7 +84,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       console.log('LanguageContext: 🔄 Updating state to:', code);
       setSelectedLanguageState(code);
       
-      // Verify it was saved
       const verification = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
       console.log('LanguageContext: ✅ Verification - Language in storage:', verification);
       
@@ -110,7 +104,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return label;
   };
 
-  // Log current language state whenever it changes
   useEffect(() => {
     if (!isLoading) {
       console.log('LanguageContext: 🔍 Current selectedLanguage state:', selectedLanguage);
