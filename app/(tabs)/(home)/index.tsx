@@ -849,11 +849,10 @@ export default function HomeScreen() {
 
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
   const scanButtonText = translate('home', 'scanLetter', selectedLanguage);
+  const galleryButtonText = translate('home', 'chooseFromGallery', selectedLanguage);
+  const emptyStateText = translate('home', 'emptyState', selectedLanguage);
+  const emptyStateSubtext = translate('home', 'emptyStateAction', selectedLanguage);
   const settingsButtonText = translate('home', 'settings', selectedLanguage);
-
-  const emptyStateText = 'Ще немає сканованих листів';
-  const emptyStateSubtext = 'Натисніть кнопку нижче, щоб додати перший лист';
-  const galleryButtonText = 'Вибрати з галереї';
   const uploadingText = 'Завантаження...';
   const documentText = 'Лист';
   const imageDeletedText = 'Фото видалено для безпеки';
@@ -970,7 +969,7 @@ export default function HomeScreen() {
               ios_icon_name="doc.text"
               android_material_icon_name="description"
               size={80}
-              color={colors.textSecondary}
+              color={colors.primary}
             />
             <Text style={styles.emptyStateText}>{emptyStateText}</Text>
             <Text style={styles.emptyStateSubtext}>{emptyStateSubtext}</Text>
@@ -1445,13 +1444,13 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.primary,
     marginTop: 20,
     textAlign: 'center',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.primary,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
