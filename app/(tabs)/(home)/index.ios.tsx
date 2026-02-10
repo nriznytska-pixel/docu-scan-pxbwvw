@@ -807,6 +807,8 @@ export default function HomeScreen() {
   const imageDeletedText = 'Фото видалено для безпеки';
   
   const analysisTitleText = translate('letterDetail', 'analysisTitle', selectedLanguage);
+  const recommendedStepsText = translate('letterDetail', 'recommendedStepsTitle', selectedLanguage);
+  const analyzingLoadingText = translate('letterDetail', 'analyzingText', selectedLanguage);
   const senderLabel = translate('letterDetail', 'sender', selectedLanguage);
   const typeLabel = translate('letterDetail', 'type', selectedLanguage);
   const descriptionLabel = translate('letterDetail', 'description', selectedLanguage);
@@ -1150,7 +1152,7 @@ export default function HomeScreen() {
 
                           {analysis.steps && analysis.steps.length > 0 && (
                             <View style={styles.stepsSection}>
-                              <Text style={styles.stepsSectionTitle}>📝 Рекомендовані кроки</Text>
+                              <Text style={styles.stepsSectionTitle}>📝 {recommendedStepsText}</Text>
                               {analysis.steps.map((step, idx) => {
                                 const stepNumber = `${idx + 1}.`;
                                 return (
@@ -1169,10 +1171,7 @@ export default function HomeScreen() {
                 ) : (
                   <View style={styles.analysisSection}>
                     <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.analyzingText}>Аналіз листа...</Text>
-                    <Text style={styles.analyzingSubtext}>
-                      Це може зайняти кілька секунд
-                    </Text>
+                    <Text style={styles.analyzingText}>{analyzingLoadingText}</Text>
                   </View>
                 )}
               </>
