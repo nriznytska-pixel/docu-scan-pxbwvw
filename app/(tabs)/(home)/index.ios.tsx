@@ -24,6 +24,7 @@ import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
 
 interface AnalysisData {
@@ -67,7 +68,6 @@ export default function HomeScreen() {
   const { selectedLanguage } = useLanguage();
   const { user } = useAuth();
   
-  // Log the current language whenever component renders
   console.log('HomeScreen (iOS): Current selectedLanguage from context:', selectedLanguage);
   
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
@@ -90,7 +90,6 @@ export default function HomeScreen() {
     fetchScans();
   }, []);
 
-  // Set up real-time subscription for scan updates
   useEffect(() => {
     if (!user) {
       console.log('HomeScreen (iOS): No user, skipping real-time subscription');
@@ -99,7 +98,6 @@ export default function HomeScreen() {
 
     console.log('HomeScreen (iOS): Setting up real-time subscription for user:', user.id);
 
-    // Subscribe to changes in the scans table for this user
     const channel = supabase
       .channel('scans-changes')
       .on(
@@ -120,14 +118,12 @@ export default function HomeScreen() {
             console.log('HomeScreen (iOS): Scan updated:', payload.new);
             const updatedScan = payload.new as ScannedDocument;
             
-            // Update the documents list
             setDocuments((prev) => 
               prev.map((doc) => 
                 doc.id === updatedScan.id ? updatedScan : doc
               )
             );
             
-            // If this is the currently selected document, update it
             if (selectedDocument && selectedDocument.id === updatedScan.id) {
               console.log('HomeScreen (iOS): Updating selected document with new analysis');
               setSelectedDocument(updatedScan);
@@ -142,17 +138,14 @@ export default function HomeScreen() {
         console.log('HomeScreen (iOS): Subscription status:', status);
       });
 
-    // Cleanup subscription on unmount
     return () => {
       console.log('HomeScreen (iOS): Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [user, selectedDocument]);
 
-  // Poll for updates on the selected document if analysis is pending
   useEffect(() => {
     if (!selectedDocument || selectedDocument.analysis) {
-      // No need to poll if no document selected or analysis already exists
       return;
     }
 
@@ -177,7 +170,6 @@ export default function HomeScreen() {
           console.log('HomeScreen (iOS): Analysis found! Updating selected document');
           setSelectedDocument(data);
           
-          // Also update in the documents list
           setDocuments((prev) =>
             prev.map((doc) => (doc.id === data.id ? data : doc))
           );
@@ -185,9 +177,8 @@ export default function HomeScreen() {
       } catch (err) {
         console.error('HomeScreen (iOS): Exception while polling:', err);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 
-    // Cleanup interval on unmount or when analysis arrives
     return () => {
       console.log('HomeScreen (iOS): Stopping polling for scan analysis');
       clearInterval(pollInterval);
@@ -225,7 +216,6 @@ export default function HomeScreen() {
       const textContent = analysisJson.content[0].text;
       console.log('HomeScreen (iOS): Raw text content:', textContent);
       
-      // Extract JSON from markdown code block (```json ... ```)
       const jsonMatch = textContent.match(/```json\s*([\s\S]*?)\s*```/);
       
       let jsonString = textContent;
@@ -318,7 +308,6 @@ export default function HomeScreen() {
       const responseData = await response.json();
       console.log('HomeScreen (iOS): Webhook response data:', JSON.stringify(responseData, null, 2));
       
-      // Parse response with flexible content path handling
       const content = responseData?.data?.content || responseData?.content;
       if (content && content[0]) {
         const responseText = content[0].text;
@@ -402,7 +391,6 @@ export default function HomeScreen() {
       const scansCount = data?.length || 0;
       console.log('HomeScreen (iOS): Successfully fetched scans, count:', scansCount);
       
-      // Log the language of each scan for debugging
       if (data && data.length > 0) {
         console.log('HomeScreen (iOS): Recent scans with languages:');
         data.slice(0, 3).forEach((scan, index) => {
@@ -526,7 +514,6 @@ export default function HomeScreen() {
     console.log('HomeScreen (iOS): ========== SAVING TO DATABASE ==========');
     console.log('HomeScreen (iOS): Image URL:', imageUrl);
     
-    // Get the current language at the time of saving (not from closure)
     const languageToSave = selectedLanguage || DEFAULT_LANGUAGE;
     console.log('HomeScreen (iOS): 🔍 CRITICAL - Language to save:', languageToSave);
     console.log('HomeScreen (iOS): 🔍 CRITICAL - Language type:', typeof languageToSave);
@@ -572,7 +559,6 @@ export default function HomeScreen() {
       console.log('HomeScreen (iOS): ========== INSERT SUCCESS ==========');
       console.log('HomeScreen (iOS): 🔍 CRITICAL - Data returned from Supabase:', JSON.stringify(insertData, null, 2));
       
-      // Verify the language was saved correctly
       if (insertData && insertData.length > 0) {
         const savedLanguage = insertData[0].language;
         console.log('HomeScreen (iOS): 🔍 CRITICAL - Language saved in database:', savedLanguage);
@@ -585,7 +571,6 @@ export default function HomeScreen() {
         }
       }
       
-      // Also create a scan record in the backend API with the language
       console.log('HomeScreen (iOS): Creating scan record in backend API');
       const backendUrl = Constants.expoConfig?.extra?.backendUrl;
       
@@ -608,7 +593,6 @@ export default function HomeScreen() {
           }
         } catch (backendError: any) {
           console.error('HomeScreen (iOS): Backend API exception:', backendError?.message);
-          // Don't fail the whole operation if backend API fails
         }
       } else {
         console.warn('HomeScreen (iOS): Backend URL not configured, skipping backend API call');
@@ -813,14 +797,26 @@ export default function HomeScreen() {
     router.push('/settings');
   };
 
-  const emptyStateText = 'Ще немає сканованих листів';
-  const emptyStateSubtext = 'Натисніть кнопку нижче, щоб додати перший лист';
-  const headerTitle = 'Мій Помічник';
-  const scanButtonText = 'Сфотографувати лист';
-  const galleryButtonText = 'Вибрати з галереї';
+  const emptyStateText = translate('home', 'emptyState', selectedLanguage);
+  const emptyStateSubtext = translate('home', 'emptyStateAction', selectedLanguage);
+  const headerTitle = translate('home', 'myLetters', selectedLanguage);
+  const scanButtonText = translate('home', 'scanLetter', selectedLanguage);
+  const galleryButtonText = translate('home', 'chooseFromGallery', selectedLanguage);
   const uploadingText = 'Завантаження...';
   const documentText = 'Лист';
   const imageDeletedText = 'Фото видалено для безпеки';
+  
+  const analysisTitleText = translate('letterDetail', 'analysisTitle', selectedLanguage);
+  const senderLabel = translate('letterDetail', 'sender', selectedLanguage);
+  const typeLabel = translate('letterDetail', 'type', selectedLanguage);
+  const descriptionLabel = translate('letterDetail', 'description', selectedLanguage);
+  const deadlineLabel = translate('letterDetail', 'deadline', selectedLanguage);
+  const amountLabel = translate('letterDetail', 'amount', selectedLanguage);
+  const urgencyLabel = translate('letterDetail', 'urgency', selectedLanguage);
+  const notSpecifiedText = translate('letterDetail', 'notSpecified', selectedLanguage);
+  const lowText = translate('letterDetail', 'low', selectedLanguage);
+  const mediumText = translate('letterDetail', 'medium', selectedLanguage);
+  const highText = translate('letterDetail', 'high', selectedLanguage);
 
   if (loading) {
     return (
@@ -1067,49 +1063,49 @@ export default function HomeScreen() {
                         );
                       }
 
-                      const senderText = analysis.sender || 'Невідомо';
-                      const typeText = analysis.type || 'Невідомо';
-                      const summaryText = analysis.summary_ua || 'Немає опису';
-                      const deadlineText = analysis.deadline || 'Не вказано';
-                      const amountText = analysis.amount ? `€${analysis.amount}` : 'Не вказано';
-                      const urgencyText = analysis.urgency === 'high' ? '🔴 Високий' : analysis.urgency === 'medium' ? '🟡 Середній' : '🟢 Низький';
+                      const senderText = analysis.sender || notSpecifiedText;
+                      const typeText = analysis.type || notSpecifiedText;
+                      const summaryText = analysis.summary_ua || notSpecifiedText;
+                      const deadlineText = analysis.deadline || notSpecifiedText;
+                      const amountText = analysis.amount ? `€${analysis.amount}` : notSpecifiedText;
+                      const urgencyText = analysis.urgency === 'high' ? `🔴 ${highText}` : analysis.urgency === 'medium' ? `🟡 ${mediumText}` : `🟢 ${lowText}`;
 
                       return (
                         <>
                           <View style={styles.analysisSection}>
-                            <Text style={styles.analysisSectionTitle}>📋 Аналіз листа</Text>
+                            <Text style={styles.analysisSectionTitle}>📋 {analysisTitleText}</Text>
                             
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Відправник:</Text>
+                              <Text style={styles.analysisLabel}>{senderLabel}</Text>
                               <Text style={styles.analysisValue}>{senderText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Тип:</Text>
+                              <Text style={styles.analysisLabel}>{typeLabel}</Text>
                               <Text style={styles.analysisValue}>{typeText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Опис:</Text>
+                              <Text style={styles.analysisLabel}>{descriptionLabel}</Text>
                               <Text style={styles.analysisValue}>{summaryText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Дедлайн:</Text>
+                              <Text style={styles.analysisLabel}>{deadlineLabel}</Text>
                               <Text style={styles.analysisValue}>{deadlineText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Сума:</Text>
+                              <Text style={styles.analysisLabel}>{amountLabel}</Text>
                               <Text style={styles.analysisValue}>{amountText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Терміновість:</Text>
+                              <Text style={styles.analysisLabel}>{urgencyLabel}</Text>
                               <Text style={styles.analysisValue}>{urgencyText}</Text>
                             </View>
 
-                            {analysis.deadline && analysis.deadline !== 'Не вказано' && (
+                            {analysis.deadline && analysis.deadline !== notSpecifiedText && (
                               <TouchableOpacity
                                 style={styles.calendarButton}
                                 onPress={() => openGoogleCalendar(senderText, analysis.deadline!, summaryText)}

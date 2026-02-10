@@ -856,6 +856,18 @@ export default function HomeScreen() {
   const uploadingText = 'Завантаження...';
   const documentText = 'Лист';
   const imageDeletedText = 'Фото видалено для безпеки';
+  
+  const analysisTitleText = translate('letterDetail', 'analysisTitle', selectedLanguage);
+  const senderLabel = translate('letterDetail', 'sender', selectedLanguage);
+  const typeLabel = translate('letterDetail', 'type', selectedLanguage);
+  const descriptionLabel = translate('letterDetail', 'description', selectedLanguage);
+  const deadlineLabel = translate('letterDetail', 'deadline', selectedLanguage);
+  const amountLabel = translate('letterDetail', 'amount', selectedLanguage);
+  const urgencyLabel = translate('letterDetail', 'urgency', selectedLanguage);
+  const notSpecifiedText = translate('letterDetail', 'notSpecified', selectedLanguage);
+  const lowText = translate('letterDetail', 'low', selectedLanguage);
+  const mediumText = translate('letterDetail', 'medium', selectedLanguage);
+  const highText = translate('letterDetail', 'high', selectedLanguage);
 
   if (loading) {
     return (
@@ -1164,49 +1176,49 @@ export default function HomeScreen() {
                         );
                       }
 
-                      const senderText = analysis.sender || 'Невідомо';
-                      const typeText = analysis.type || 'Невідомо';
-                      const summaryText = analysis.summary_ua || 'Немає опису';
-                      const deadlineText = analysis.deadline || 'Не вказано';
-                      const amountText = analysis.amount ? `€${analysis.amount}` : 'Не вказано';
-                      const urgencyText = analysis.urgency === 'high' ? '🔴 Високий' : analysis.urgency === 'medium' ? '🟡 Середній' : '🟢 Низький';
+                      const senderText = analysis.sender || notSpecifiedText;
+                      const typeText = analysis.type || notSpecifiedText;
+                      const summaryText = analysis.summary_ua || notSpecifiedText;
+                      const deadlineText = analysis.deadline || notSpecifiedText;
+                      const amountText = analysis.amount ? `€${analysis.amount}` : notSpecifiedText;
+                      const urgencyText = analysis.urgency === 'high' ? `🔴 ${highText}` : analysis.urgency === 'medium' ? `🟡 ${mediumText}` : `🟢 ${lowText}`;
 
                       return (
                         <>
                           <View style={styles.analysisSection}>
-                            <Text style={styles.analysisSectionTitle}>📋 Аналіз листа</Text>
+                            <Text style={styles.analysisSectionTitle}>📋 {analysisTitleText}</Text>
                             
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Відправник:</Text>
+                              <Text style={styles.analysisLabel}>{senderLabel}</Text>
                               <Text style={styles.analysisValue}>{senderText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Тип:</Text>
+                              <Text style={styles.analysisLabel}>{typeLabel}</Text>
                               <Text style={styles.analysisValue}>{typeText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Опис:</Text>
+                              <Text style={styles.analysisLabel}>{descriptionLabel}</Text>
                               <Text style={styles.analysisValue}>{summaryText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Дедлайн:</Text>
+                              <Text style={styles.analysisLabel}>{deadlineLabel}</Text>
                               <Text style={styles.analysisValue}>{deadlineText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Сума:</Text>
+                              <Text style={styles.analysisLabel}>{amountLabel}</Text>
                               <Text style={styles.analysisValue}>{amountText}</Text>
                             </View>
 
                             <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>Терміновість:</Text>
+                              <Text style={styles.analysisLabel}>{urgencyLabel}</Text>
                               <Text style={styles.analysisValue}>{urgencyText}</Text>
                             </View>
 
-                            {analysis.deadline && analysis.deadline !== 'Не вказано' && (
+                            {analysis.deadline && analysis.deadline !== notSpecifiedText && (
                               <TouchableOpacity
                                 style={styles.calendarButton}
                                 onPress={() => openGoogleCalendar(senderText, analysis.deadline!, summaryText)}
