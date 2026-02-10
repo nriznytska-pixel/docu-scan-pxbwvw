@@ -23,7 +23,6 @@ interface LanguageOption {
 
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦', enabled: true },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺', enabled: true },
   { code: 'en', label: 'English', flag: '🇬🇧', enabled: true },
   { code: 'nl', label: 'Nederlands', flag: '🇳🇱', enabled: true },
   { code: 'pl', label: 'Polski', flag: '🇵🇱', enabled: true },
