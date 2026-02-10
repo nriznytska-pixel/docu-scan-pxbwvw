@@ -11,6 +11,7 @@ export interface LanguageOption {
 export const LANGUAGES: LanguageOption[] = [
   { code: 'uk', label: 'Українська', emoji: '🇺🇦' },
   { code: 'en', label: 'English', emoji: '🇬🇧' },
+  { code: 'nl', label: 'Nederlands', emoji: '🇳🇱' },
   { code: 'ar', label: 'العربية', emoji: '🇸🇦' },
   { code: 'tr', label: 'Türkçe', emoji: '🇹🇷' },
   { code: 'ti', label: 'ትግርኛ', emoji: '🇪🇷' },

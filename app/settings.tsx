@@ -14,18 +14,16 @@ import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { translate } from '@/constants/translations';
 
-// Language options with flags and codes
 const LANGUAGE_OPTIONS = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'pl', label: 'Polski', flag: '🇵🇱' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
   { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷' },
+  { code: 'pl', label: 'Polski', flag: '🇵🇱' },
 ];
 
 export default function SettingsScreen() {
@@ -44,7 +42,6 @@ export default function SettingsScreen() {
     console.log('SettingsScreen: User tapped language button:', code);
     console.log('SettingsScreen: Previous language was:', selectedLanguage);
     
-    // Save the language code to AsyncStorage
     await setSelectedLanguage(code);
     
     console.log('SettingsScreen: Language saved successfully:', code);
@@ -67,14 +64,14 @@ export default function SettingsScreen() {
     setShowLogoutModal(false);
   };
 
-  const backButtonText = '← Назад';
-  const screenTitle = '⚙️ Налаштування';
-  const languageSectionTitle = 'Мова перекладу:';
-  const logoutButtonText = 'Вийти';
+  const backButtonText = translate('signup', 'back', selectedLanguage);
+  const screenTitle = translate('settings', 'title', selectedLanguage);
+  const languageSectionTitle = translate('settings', 'translationLanguage', selectedLanguage);
+  const logoutButtonText = translate('settings', 'logout', selectedLanguage);
   const logoutModalTitle = 'Вийти з акаунту?';
   const logoutModalMessage = 'Ви впевнені, що хочете вийти?';
   const cancelButtonText = 'Скасувати';
-  const confirmLogoutButtonText = 'Вийти';
+  const confirmLogoutButtonText = translate('settings', 'logout', selectedLanguage);
 
   return (
     <>
@@ -96,11 +93,9 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Language Selector Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{languageSectionTitle}</Text>
             
-            {/* Language Buttons List */}
             <View style={styles.languageList}>
               {LANGUAGE_OPTIONS.map((language) => {
                 const isSelected = selectedLanguage === language.code;
@@ -130,10 +125,8 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Spacer */}
           <View style={styles.spacer} />
 
-          {/* Logout Button */}
           <View style={styles.logoutSection}>
             <TouchableOpacity
               style={styles.logoutButton}
@@ -145,7 +138,6 @@ export default function SettingsScreen() {
           </View>
         </ScrollView>
 
-        {/* Logout Confirmation Modal */}
         <Modal
           visible={showLogoutModal}
           animationType="fade"

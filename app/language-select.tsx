@@ -24,6 +24,7 @@ interface LanguageOption {
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: 'uk', label: 'Українська', flag: '🇺🇦', enabled: true },
   { code: 'en', label: 'English', flag: '🇬🇧', enabled: true },
+  { code: 'nl', label: 'Nederlands', flag: '🇳🇱', enabled: true },
   { code: 'ar', label: 'العربية', flag: '🇸🇦', enabled: true },
   { code: 'tr', label: 'Türkçe', flag: '🇹🇷', enabled: true },
   { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷', enabled: true },
