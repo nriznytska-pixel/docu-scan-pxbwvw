@@ -33,10 +33,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('AuthProvider: Checking initial session');
     
     // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('AuthProvider: Error getting initial session:', error.message);
+      }
       console.log('AuthProvider: Initial session check result:', session ? 'Session found' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch((err) => {
+      console.error('AuthProvider: Exception getting initial session:', err);
       setLoading(false);
     });
 
@@ -70,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('AuthProvider: signIn successful, user:', data.user?.email);
+      console.log('AuthProvider: Session established:', !!data.session);
       return { error: null };
     } catch (error: any) {
       console.error('AuthProvider: signIn exception:', error);
@@ -85,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: undefined, // Disable email confirmation
+          emailRedirectTo: undefined,
         },
       });
 
@@ -95,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('AuthProvider: signUp successful, user:', data.user?.email);
+      console.log('AuthProvider: Session established:', !!data.session);
       return { error: null };
     } catch (error: any) {
       console.error('AuthProvider: signUp exception:', error);
@@ -113,13 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         console.log('AuthProvider: signOut successful');
       }
-      
-      // Always clear local state even if API call fails
-      setUser(null);
-      setSession(null);
     } catch (error: any) {
       console.error('AuthProvider: signOut exception:', error);
-      // Always clear local state even if exception occurs
+    } finally {
+      // Always clear local state even if API call fails
+      console.log('AuthProvider: Clearing local auth state');
       setUser(null);
       setSession(null);
     }

@@ -57,19 +57,28 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(tabs)';
     const onLanguageSelect = segments[0] === 'language-select';
-    const onLoginOrSignup = segments[0] === 'login' || segments[0] === 'signup';
     
     console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'inAuthGroup:', inAuthGroup, 'hasLanguage:', hasLanguage);
 
+    // Priority 1: No language selected -> go to language selection
     if (!hasLanguage && !onLanguageSelect) {
       console.log('RootLayoutNav: No language selected, redirecting to language-select');
       router.replace('/language-select');
-    } else if (!user && inAuthGroup) {
-      console.log('RootLayoutNav: No user, redirecting to login');
-      router.replace('/login');
-    } else if (user && !inAuthGroup && hasLanguage && !onLoginOrSignup) {
-      console.log('RootLayoutNav: User logged in, redirecting to home');
+      return;
+    }
+
+    // Priority 2: User is logged in and has language -> go to home
+    if (user && hasLanguage && !inAuthGroup) {
+      console.log('RootLayoutNav: User logged in with language, redirecting to home');
       router.replace('/(tabs)/(home)');
+      return;
+    }
+
+    // Priority 3: No user but trying to access protected routes -> go to login
+    if (!user && inAuthGroup) {
+      console.log('RootLayoutNav: No user in protected route, redirecting to login');
+      router.replace('/login');
+      return;
     }
   }, [user, loading, segments, router, hasLanguage]);
 

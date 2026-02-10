@@ -22,7 +22,7 @@ export default function LoginScreen() {
   console.log('LoginScreen: Component rendered');
   
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const { selectedLanguage, refreshLanguage } = useLanguage();
   
   const [email, setEmail] = useState('');
@@ -36,6 +36,13 @@ export default function LoginScreen() {
     refreshLanguage();
   }, []);
 
+  // If user is already logged in, they'll be redirected by _layout.tsx
+  useEffect(() => {
+    if (user) {
+      console.log('LoginScreen: User already logged in, waiting for redirect');
+    }
+  }, [user]);
+
   console.log('LoginScreen: Current language:', selectedLanguage);
 
   const handleSignIn = async () => {
@@ -44,21 +51,52 @@ export default function LoginScreen() {
     
     if (!email || !password) {
       console.log('LoginScreen: Validation failed - empty fields');
-      setError('Please fill in all fields');
+      const errorMsg = translate('login', 'emptyFields', selectedLanguage) || 'Please fill in all fields';
+      setError(errorMsg);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.log('LoginScreen: Validation failed - invalid email format');
+      const errorMsg = translate('login', 'invalidEmail', selectedLanguage) || 'Please enter a valid email address';
+      setError(errorMsg);
       return;
     }
 
     setLoading(true);
     setError('');
+    console.log('LoginScreen: Starting sign in process...');
 
-    const { error: signInError } = await signIn(email, password);
+    try {
+      const { error: signInError } = await signIn(email, password);
 
-    if (signInError) {
-      console.error('LoginScreen: Sign in failed:', signInError.message);
-      setError('Invalid email or password');
+      if (signInError) {
+        console.error('LoginScreen: Sign in failed:', signInError.message);
+        
+        // Provide user-friendly error messages
+        let errorMsg = 'Invalid email or password';
+        if (signInError.message.includes('Invalid login credentials')) {
+          errorMsg = translate('login', 'invalidCredentials', selectedLanguage) || 'Invalid email or password';
+        } else if (signInError.message.includes('Email not confirmed')) {
+          errorMsg = translate('login', 'emailNotConfirmed', selectedLanguage) || 'Please confirm your email address';
+        } else if (signInError.message.includes('network')) {
+          errorMsg = translate('login', 'networkError', selectedLanguage) || 'Network error. Please check your connection';
+        }
+        
+        setError(errorMsg);
+        setLoading(false);
+      } else {
+        console.log('LoginScreen: Sign in successful! User will be redirected by _layout.tsx');
+        // Don't set loading to false here - let the redirect happen
+        // The loading state will keep the button disabled during redirect
+      }
+    } catch (err: any) {
+      console.error('LoginScreen: Unexpected error during sign in:', err);
+      const errorMsg = translate('login', 'unexpectedError', selectedLanguage) || 'An unexpected error occurred. Please try again.';
+      setError(errorMsg);
       setLoading(false);
-    } else {
-      console.log('LoginScreen: Sign in successful, navigating to home');
     }
   };
 
@@ -110,7 +148,10 @@ export default function LoginScreen() {
               placeholder={emailPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text.trim());
+                setError('');
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
@@ -122,7 +163,10 @@ export default function LoginScreen() {
               placeholder={passwordPlaceholder}
               placeholderTextColor={colors.textSecondary}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                setError('');
+              }}
               secureTextEntry
               autoCapitalize="none"
               autoComplete="password"
@@ -262,5 +306,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
+    marginLeft: 4,
   },
 });
