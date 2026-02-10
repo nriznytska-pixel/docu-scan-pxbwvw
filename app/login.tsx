@@ -67,7 +67,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [language, setLanguage] = useState<string>('uk');
-  const [languageLabel, setLanguageLabel] = useState<string>('🇺🇦 Українська');
+  const [languageLabel, setLanguageLabel] = useState<string>('Українська');
 
   useEffect(() => {
     loadLanguage();
@@ -80,7 +80,7 @@ export default function LoginScreen() {
       
       if (savedLanguage) {
         setLanguage(savedLanguage);
-        const label = savedLanguage === 'uk' ? '🇺🇦 Українська' : '🇬🇧 English';
+        const label = savedLanguage === 'uk' ? 'Українська' : 'English';
         setLanguageLabel(label);
       }
     } catch (error) {
@@ -129,7 +129,7 @@ export default function LoginScreen() {
   };
 
   const goToLanguageSelect = () => {
-    console.log('LoginScreen: User tapped language badge');
+    console.log('LoginScreen: User tapped language back button');
     router.push('/language-select');
   };
 
@@ -138,6 +138,7 @@ export default function LoginScreen() {
   const subtitleText = language === 'uk' 
     ? 'Ваш AI-помічник з офіційними листами'
     : 'Your AI assistant for official letters';
+  const backButtonText = `← ${languageLabel}`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -154,11 +155,11 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>{subtitleText}</Text>
             
             <TouchableOpacity
-              style={styles.languageBadge}
+              style={styles.languageBackButton}
               onPress={goToLanguageSelect}
               activeOpacity={0.7}
             >
-              <Text style={styles.languageBadgeText}>{languageLabel}</Text>
+              <Text style={styles.languageBackButtonText}>{backButtonText}</Text>
             </TouchableOpacity>
           </View>
 
@@ -246,19 +247,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 16,
   },
-  languageBadge: {
+  languageBackButton: {
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  languageBadgeText: {
-    fontSize: 14,
+  languageBackButtonText: {
+    fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.primary,
   },
   form: {
     width: '100%',
