@@ -23,6 +23,7 @@ interface LanguageContextType {
   selectedLanguage: string;
   setSelectedLanguage: (code: string) => Promise<void>;
   getLanguageLabel: (code: string) => string;
+  refreshLanguage: () => Promise<void>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -63,6 +64,24 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
       console.log('LanguageContext: ✅ Initialization complete');
+    }
+  };
+
+  const refreshLanguage = async () => {
+    console.log('LanguageContext: 🔄 Refreshing language from storage');
+    try {
+      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      console.log('LanguageContext: 🔍 Refreshed value from AsyncStorage:', savedLanguage);
+      
+      if (savedLanguage) {
+        const validCodes = LANGUAGES.map(lang => lang.code);
+        if (validCodes.includes(savedLanguage)) {
+          console.log('LanguageContext: ✅ Updating state to refreshed language:', savedLanguage);
+          setSelectedLanguageState(savedLanguage);
+        }
+      }
+    } catch (error) {
+      console.error('LanguageContext: ❌ Error refreshing language:', error);
     }
   };
 
@@ -118,7 +137,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   console.log('LanguageContext: ✅ Provider rendering with language:', selectedLanguage);
 
   return (
-    <LanguageContext.Provider value={{ selectedLanguage, setSelectedLanguage, getLanguageLabel }}>
+    <LanguageContext.Provider value={{ selectedLanguage, setSelectedLanguage, getLanguageLabel, refreshLanguage }}>
       {children}
     </LanguageContext.Provider>
   );

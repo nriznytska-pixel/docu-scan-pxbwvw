@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -23,13 +23,19 @@ export default function SignupScreen() {
   
   const router = useRouter();
   const { signUp } = useAuth();
-  const { selectedLanguage } = useLanguage();
+  const { selectedLanguage, refreshLanguage } = useLanguage();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Refresh language from storage when component mounts
+  useEffect(() => {
+    console.log('SignupScreen: Refreshing language from storage');
+    refreshLanguage();
+  }, []);
 
   console.log('SignupScreen: Current language:', selectedLanguage);
 

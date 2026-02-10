@@ -23,21 +23,24 @@ export default function LoginScreen() {
   
   const router = useRouter();
   const { signIn } = useAuth();
-  const { selectedLanguage } = useLanguage();
+  const { selectedLanguage, refreshLanguage } = useLanguage();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Refresh language from storage when component mounts
+  useEffect(() => {
+    console.log('LoginScreen: Refreshing language from storage');
+    refreshLanguage();
+  }, []);
+
   console.log('LoginScreen: Current language:', selectedLanguage);
 
   const handleSignIn = async () => {
     console.log('LoginScreen: User tapped sign in button');
     console.log('LoginScreen: Email:', email);
-    
-    const emailPlaceholder = translate('login', 'email', selectedLanguage);
-    const passwordPlaceholder = translate('login', 'password', selectedLanguage);
     
     if (!email || !password) {
       console.log('LoginScreen: Validation failed - empty fields');
