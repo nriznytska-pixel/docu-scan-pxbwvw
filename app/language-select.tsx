@@ -90,7 +90,7 @@ export default function LanguageSelectScreen() {
             ios_icon_name="globe"
             android_material_icon_name="language"
             size={20}
-            color={colors.textSecondary}
+            color="#1E3A8A"
           />
           <Text style={styles.chooseLanguageText}>{chooseLanguageText}</Text>
         </View>
@@ -182,15 +182,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   subtitleLine1: {
-    fontSize: 16,
-    color: colors.text,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E3A8A',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    letterSpacing: 0.3,
   },
   subtitleLine2: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E3A8A',
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   languageSelectorHeader: {
     flexDirection: 'row',
@@ -200,9 +204,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chooseLanguageText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E3A8A',
     marginLeft: 8,
+    letterSpacing: 0.2,
   },
   languageList: {
     marginBottom: 24,
