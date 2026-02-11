@@ -338,11 +338,15 @@ export default function HomeScreen() {
       return;
     }
     
+    console.log('HomeScreen (iOS): 🔍 CRITICAL - Using scan UUID:', selectedDocument.id);
+    console.log('HomeScreen (iOS): 🔍 CRITICAL - Scan ID type:', typeof selectedDocument.id);
+    
     setGeneratingResponse(true);
     
     try {
       const { generateResponseLetter } = await import('@/utils/api');
       
+      console.log('HomeScreen (iOS): 🔍 Calling generateResponseLetter with scanId:', selectedDocument.id);
       const { data, error } = await generateResponseLetter(selectedDocument.id, analysis);
       
       if (error) {
