@@ -209,12 +209,6 @@ export function register(app: App, fastify: FastifyInstance) {
               response: { type: 'string' },
             },
           },
-          404: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-            },
-          },
         },
       },
     },
@@ -228,17 +222,6 @@ export function register(app: App, fastify: FastifyInstance) {
       app.logger.info({ scanId: id }, 'Generating response letter');
 
       try {
-        // Verify scan exists
-        const [scan] = await app.db
-          .select()
-          .from(schema.scans)
-          .where(eq(schema.scans.id, id));
-
-        if (!scan) {
-          app.logger.warn({ scanId: id }, 'Scan not found');
-          return reply.status(404).send({ error: 'Scan not found' });
-        }
-
         // Build prompt with analysis details
         const analysisText = JSON.stringify(analysis, null, 2);
         const prompt = `Based on this letter analysis: ${analysisText}, generate a professional response letter in correct, formal Dutch. The response should be polite, clear, and address the main points of the original letter.`;
