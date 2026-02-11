@@ -16,40 +16,17 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 
-const LANGUAGE_OPTIONS = [
-  { code: 'uk', label: '🇺🇦 UA Українська' },
-  { code: 'ru', label: '🇷🇺 RU Русский' },
-  { code: 'en', label: '🇬🇧 GB English' },
-  { code: 'nl', label: '🇳🇱 NL Nederlands' },
-  { code: 'pl', label: '🇵🇱 PL Polski' },
-  { code: 'tr', label: '🇹🇷 TR Türkçe' },
-  { code: 'de', label: '🇩🇪 DE Deutsch' },
-  { code: 'fr', label: '🇫🇷 FR Français' },
-  { code: 'es', label: '🇪🇸 ES Español' },
-  { code: 'ar', label: '🇸🇦 SA العربية' },
-  { code: 'ti', label: '🇪🇷 ER ትግርኛ' },
-];
-
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
   
   const router = useRouter();
-  const { selectedLanguage, setSelectedLanguage } = useLanguage();
+  const { selectedLanguage } = useLanguage();
   const { signOut, user } = useAuth();
   
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   console.log('SettingsScreen: Current selectedLanguage:', selectedLanguage);
   console.log('SettingsScreen: Current user:', user?.email || 'null');
-
-  const handleLanguageSelect = async (code: string) => {
-    console.log('SettingsScreen: User tapped language button:', code);
-    console.log('SettingsScreen: Previous language was:', selectedLanguage);
-    
-    await setSelectedLanguage(code);
-    
-    console.log('SettingsScreen: Language saved successfully:', code);
-  };
 
   const handleLogoutPress = () => {
     console.log('SettingsScreen: User tapped logout button');
@@ -70,7 +47,6 @@ export default function SettingsScreen() {
 
   const backButtonText = translate('settings', 'back', selectedLanguage);
   const screenTitle = translate('settings', 'title', selectedLanguage);
-  const languageSectionTitle = translate('settings', 'translationLanguage', selectedLanguage);
   const logoutButtonText = translate('settings', 'logout', selectedLanguage);
   const logoutModalTitle = translate('settings', 'logoutModalTitle', selectedLanguage);
   const logoutModalMessage = translate('settings', 'logoutModalMessage', selectedLanguage);
@@ -97,37 +73,6 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
         >
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{languageSectionTitle}</Text>
-            
-            <View style={styles.languageList}>
-              {LANGUAGE_OPTIONS.map((language) => {
-                const isSelected = selectedLanguage === language.code;
-                
-                return (
-                  <TouchableOpacity
-                    key={language.code}
-                    style={[
-                      styles.languageButton,
-                      isSelected ? styles.languageButtonSelected : styles.languageButtonUnselected,
-                    ]}
-                    onPress={() => handleLanguageSelect(language.code)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.languageButtonText,
-                        isSelected ? styles.languageButtonTextSelected : styles.languageButtonTextUnselected,
-                      ]}
-                    >
-                      {language.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
           <View style={styles.logoutSection}>
             <TouchableOpacity
               style={styles.logoutButton}
@@ -186,46 +131,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 120,
   },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  languageList: {
-    gap: 12,
-  },
-  languageButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    minHeight: 56,
-    justifyContent: 'center',
-  },
-  languageButtonSelected: {
-    backgroundColor: '#007AFF',
-  },
-  languageButtonUnselected: {
-    backgroundColor: '#E5E5EA',
-  },
-  languageButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  languageButtonTextSelected: {
-    color: '#FFFFFF',
-  },
-  languageButtonTextUnselected: {
-    color: '#000000',
-  },
   logoutSection: {
     marginTop: 32,
     paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   logoutButton: {
     backgroundColor: '#FF3B30',
