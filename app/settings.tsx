@@ -17,17 +17,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 
 const LANGUAGE_OPTIONS = [
-  { code: 'uk', label: 'Українська', flag: '🇺🇦' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
-  { code: 'pl', label: 'Polski', flag: '🇵🇱' },
-  { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'ar', label: 'العربية', flag: '🇸🇦' },
-  { code: 'ti', label: 'ትግርኛ', flag: '🇪🇷' },
+  { code: 'uk', label: '🇺🇦 UA Українська' },
+  { code: 'ru', label: '🇷🇺 RU Русский' },
+  { code: 'en', label: '🇬🇧 GB English' },
+  { code: 'nl', label: '🇳🇱 NL Nederlands' },
+  { code: 'pl', label: '🇵🇱 PL Polski' },
+  { code: 'tr', label: '🇹🇷 TR Türkçe' },
+  { code: 'de', label: '🇩🇪 DE Deutsch' },
+  { code: 'fr', label: '🇫🇷 FR Français' },
+  { code: 'es', label: '🇪🇸 ES Español' },
+  { code: 'ar', label: '🇸🇦 SA العربية' },
+  { code: 'ti', label: '🇪🇷 ER ትግርኛ' },
 ];
 
 export default function SettingsScreen() {
@@ -103,7 +103,6 @@ export default function SettingsScreen() {
             <View style={styles.languageList}>
               {LANGUAGE_OPTIONS.map((language) => {
                 const isSelected = selectedLanguage === language.code;
-                const buttonText = `${language.flag} ${language.code.toUpperCase()} ${language.label}`;
                 
                 return (
                   <TouchableOpacity
@@ -121,7 +120,7 @@ export default function SettingsScreen() {
                         isSelected ? styles.languageButtonTextSelected : styles.languageButtonTextUnselected,
                       ]}
                     >
-                      {buttonText}
+                      {language.label}
                     </Text>
                   </TouchableOpacity>
                 );
