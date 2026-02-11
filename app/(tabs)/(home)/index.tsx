@@ -10,7 +10,6 @@ import {
   Platform,
   Modal,
   ActivityIndicator,
-  Alert,
   Linking,
   Clipboard,
 } from 'react-native';
@@ -95,6 +94,32 @@ export default function HomeScreen() {
   const [scanCount, setScanCount] = useState(0);
   const [showPaywall, setShowPaywall] = useState(false);
   const FREE_SCAN_LIMIT = 3;
+  
+  // Custom modal state
+  const [customModal, setCustomModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons?: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: [],
+  });
+
+  const showCustomAlert = (
+    title: string,
+    message: string,
+    buttons?: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+  ) => {
+    setCustomModal({
+      visible: true,
+      title,
+      message,
+      buttons: buttons || [{ text: 'OK', onPress: () => setCustomModal(prev => ({ ...prev, visible: false })) }],
+    });
+  };
 
   const fetchScans = useCallback(async () => {
     console.log('HomeScreen: fetchScans started');
@@ -347,7 +372,7 @@ export default function HomeScreen() {
       })
       .catch((err) => {
         console.error('HomeScreen: Failed to open Google Calendar:', err);
-        Alert.alert('Помилка', 'Не вдалося відкрити Google Calendar');
+        showCustomAlert('Помилка', 'Не вдалося відкрити Google Calendar');
       });
   };
 
@@ -400,12 +425,63 @@ export default function HomeScreen() {
         setShowResponseModal(true);
       } else {
         console.error('HomeScreen: Unexpected response structure');
-        Alert.alert('Помилка', 'Отримано некоректну відповідь від сервера');
+        showCustomAlert('Помилка', 'Отримано некоректну відповідь від сервера');
         setGeneratingResponse(false);
       }
     } catch (error) {
       console.error('HomeScreen: Error calling webhook:', error);
-      Alert.alert('Помилка', 'Не вдалося згенерувати відповідь. Спробуйте ще раз.');
+      showCustomAlert('Помилка', 'Не вдалося згенерувати відповідь. Спробуйте ще раз.');
+      setGeneratingResponse(false);
+    }
+  };
+
+  const generateSampleResponse = async (analysis: ParsedAnalysisContent) => {
+    console.log('HomeScreen: User tapped "Sample response letter" button');
+    console.log('HomeScreen: Generating sample response for analysis:', JSON.stringify(analysis, null, 2));
+    
+    if (!selectedDocument) {
+      console.error('HomeScreen: No selected document');
+      showCustomAlert('Помилка', 'Документ не вибрано');
+      return;
+    }
+    
+    setGeneratingResponse(true);
+    
+    try {
+      const { generateResponseLetter } = await import('@/utils/api');
+      
+      const { data, error } = await generateResponseLetter(selectedDocument.id, analysis);
+      
+      if (error) {
+        console.error('HomeScreen: Generate response API error:', error);
+        
+        // Check if it's an authentication error
+        if (error.includes('Authentication')) {
+          showCustomAlert(
+            'Помилка автентифікації',
+            'Будь ласка, увійдіть в систему знову для використання цієї функції.'
+          );
+        } else {
+          showCustomAlert('Помилка', `Не вдалося згенерувати відповідь: ${error}`);
+        }
+        
+        setGeneratingResponse(false);
+        return;
+      }
+      
+      if (data && data.response) {
+        console.log('HomeScreen: Generated response text:', data.response);
+        setGeneratedResponse(data.response);
+        setGeneratingResponse(false);
+        setShowResponseModal(true);
+      } else {
+        console.error('HomeScreen: No response text in API response');
+        showCustomAlert('Помилка', 'Отримано некоректну відповідь від сервера');
+        setGeneratingResponse(false);
+      }
+    } catch (error: any) {
+      console.error('HomeScreen: Exception generating sample response:', error);
+      showCustomAlert('Помилка', `Не вдалося згенерувати відповідь: ${error?.message || 'Невідома помилка'}`);
       setGeneratingResponse(false);
     }
   };
@@ -413,7 +489,8 @@ export default function HomeScreen() {
   const copyToClipboard = () => {
     console.log('HomeScreen: User tapped "Копіювати" button');
     Clipboard.setString(generatedResponse);
-    Alert.alert('Успіх', 'Текст скопійовано в буфер обміну');
+    const successMessage = translate('letterDetail', 'copiedSuccess', selectedLanguage);
+    showCustomAlert('Успіх', successMessage);
   };
 
   const sendEmail = () => {
@@ -426,7 +503,7 @@ export default function HomeScreen() {
       })
       .catch((err) => {
         console.error('HomeScreen: Failed to open email app:', err);
-        Alert.alert('Помилка', 'Не вдалося відкрити додаток електронної пошти');
+        showCustomAlert('Помилка', 'Не вдалося відкрити додаток електронної пошти');
       });
   };
 
@@ -452,7 +529,7 @@ export default function HomeScreen() {
     
     if (status !== 'granted') {
       console.log('HomeScreen: Camera permission denied');
-      Alert.alert(
+      showCustomAlert(
         'Дозвіл потрібен',
         'Будь ласка, надайте доступ до камери для сканування документів.'
       );
@@ -560,7 +637,7 @@ export default function HomeScreen() {
     
     if (!user) {
       console.error('HomeScreen: No user logged in, cannot save scan');
-      Alert.alert('Помилка', 'Ви повинні увійти в систему для збереження сканів');
+      showCustomAlert('Помилка', 'Ви повинні увійти в систему для збереження сканів');
       return false;
     }
     
@@ -589,7 +666,7 @@ export default function HomeScreen() {
         console.error('Details:', insertError.details);
         console.error('Hint:', insertError.hint);
         
-        Alert.alert(
+        showCustomAlert(
           'Помилка збереження',
           `Не вдалося зберегти запис.\n\nПовідомлення: ${insertError.message}\nКод: ${insertError.code || 'N/A'}\n\nПеревірте налаштування таблиці "scans" у Supabase.`
         );
@@ -643,7 +720,7 @@ export default function HomeScreen() {
       console.error('HomeScreen: ========== EXCEPTION IN SAVE ==========');
       console.error('Exception:', JSON.stringify(error, null, 2));
       
-      Alert.alert(
+      showCustomAlert(
         'Помилка',
         `Виняток при збереженні: ${error?.message || 'Невідома помилка'}`
       );
@@ -670,7 +747,7 @@ export default function HomeScreen() {
       
       if (!compressedBase64) {
         console.error('HomeScreen: Compression failed');
-        Alert.alert('Помилка', 'Не вдалося стиснути зображення.');
+        showCustomAlert('Помилка', 'Не вдалося стиснути зображення.');
         setUploading(false);
         return;
       }
@@ -680,7 +757,7 @@ export default function HomeScreen() {
       
       if (!imageUrl) {
         console.error('HomeScreen: Upload to storage failed');
-        Alert.alert('Помилка', 'Не вдалося завантажити зображення до сховища.');
+        showCustomAlert('Помилка', 'Не вдалося завантажити зображення до сховища.');
         setUploading(false);
         return;
       }
@@ -696,7 +773,7 @@ export default function HomeScreen() {
       }
 
       console.log('HomeScreen: ========== UPLOAD COMPLETE ==========');
-      Alert.alert('Успіх', 'Лист успішно завантажено!');
+      showCustomAlert('Успіх', 'Лист успішно завантажено!');
       
       console.log('HomeScreen: Refreshing scans list');
       await fetchScans();
@@ -705,7 +782,7 @@ export default function HomeScreen() {
       console.error('HomeScreen: ========== UPLOAD PROCESS ERROR ==========');
       console.error('Error:', JSON.stringify(error, null, 2));
       
-      Alert.alert(
+      showCustomAlert(
         'Помилка',
         `Не вдалося завантажити зображення.\n\n${error?.message || 'Невідома помилка'}`
       );
@@ -800,7 +877,7 @@ export default function HomeScreen() {
 
       if (error) {
         console.error('HomeScreen: Delete error:', JSON.stringify(error, null, 2));
-        Alert.alert('Помилка', 'Не вдалося видалити лист.');
+        showCustomAlert('Помилка', 'Не вдалося видалити лист.');
       } else {
         console.log('HomeScreen: Document deleted successfully');
         await fetchScans();
@@ -843,7 +920,7 @@ export default function HomeScreen() {
       await signOut();
     } catch (error) {
       console.error('HomeScreen: Logout error:', error);
-      Alert.alert('Помилка', 'Не вдалося вийти');
+      showCustomAlert('Помилка', 'Не вдалося вийти');
     }
   };
 
@@ -868,6 +945,10 @@ export default function HomeScreen() {
   const lowText = translate('letterDetail', 'low', selectedLanguage);
   const mediumText = translate('letterDetail', 'medium', selectedLanguage);
   const highText = translate('letterDetail', 'high', selectedLanguage);
+  const sampleResponseButtonText = translate('letterDetail', 'sampleResponseButton', selectedLanguage);
+  const generatingResponseText = translate('letterDetail', 'generatingResponse', selectedLanguage);
+  const responseTitleText = translate('letterDetail', 'responseTitle', selectedLanguage);
+  const copyButtonText = translate('letterDetail', 'copyButton', selectedLanguage);
 
   if (loading) {
     return (
@@ -1087,7 +1168,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={{ marginTop: 32, gap: 12 }}>
-              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#3B82F6', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#3B82F6', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щомісячно</Text>
                   <Text style={{ fontSize: 14, color: '#BFDBFE' }}>Скасувати будь-коли</Text>
@@ -1095,7 +1176,7 @@ export default function HomeScreen() {
                 <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€4.99</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#1D4ED8', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#1D4ED8', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щорічно</Text>
                   <Text style={{ fontSize: 14, color: '#BFDBFE' }}>2 місяці безкоштовно</Text>
@@ -1103,7 +1184,7 @@ export default function HomeScreen() {
                 <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€34.99</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#059669', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#059669', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Назавжди</Text>
                   <Text style={{ fontSize: 14, color: '#A7F3D0' }}>Одноразова оплата</Text>
@@ -1275,6 +1356,23 @@ export default function HomeScreen() {
                               })}
                             </View>
                           )}
+
+                          <View style={styles.sampleResponseSection}>
+                            <TouchableOpacity
+                              style={[styles.sampleResponseButton, generatingResponse && styles.disabledButton]}
+                              onPress={() => generateSampleResponse(analysis)}
+                              activeOpacity={0.7}
+                              disabled={generatingResponse}
+                            >
+                              <Text style={styles.sampleResponseButtonText}>{sampleResponseButtonText}</Text>
+                            </TouchableOpacity>
+                            {generatingResponse && (
+                              <View style={styles.generatingContainer}>
+                                <ActivityIndicator size="small" color={colors.primary} />
+                                <Text style={styles.generatingText}>{generatingResponseText}</Text>
+                              </View>
+                            )}
+                          </View>
                         </>
                       );
                     })()}
@@ -1309,7 +1407,7 @@ export default function HomeScreen() {
             >
               <Text style={styles.backButtonText}>← Назад</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Згенерована відповідь</Text>
+            <Text style={styles.modalTitle}>{responseTitleText}</Text>
             <View style={{ width: 80 }} />
           </View>
 
@@ -1330,7 +1428,7 @@ export default function HomeScreen() {
                   size={20}
                   color={colors.primary}
                 />
-                <Text style={styles.responseActionText}>Копіювати</Text>
+                <Text style={styles.responseActionText}>{copyButtonText}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1378,6 +1476,50 @@ export default function HomeScreen() {
               >
                 <Text style={styles.deleteModalConfirmText}>Видалити</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Alert Modal */}
+      <Modal
+        visible={customModal.visible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setCustomModal(prev => ({ ...prev, visible: false }))}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>{customModal.title}</Text>
+            <Text style={styles.deleteModalMessage}>{customModal.message}</Text>
+            <View style={styles.deleteModalButtons}>
+              {customModal.buttons && customModal.buttons.map((button, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={
+                    button.style === 'destructive'
+                      ? styles.deleteModalConfirmButton
+                      : button.style === 'cancel'
+                      ? styles.deleteModalCancelButton
+                      : styles.deleteModalCancelButton
+                  }
+                  onPress={() => {
+                    setCustomModal(prev => ({ ...prev, visible: false }));
+                    if (button.onPress) button.onPress();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={
+                      button.style === 'destructive'
+                        ? styles.deleteModalConfirmText
+                        : styles.deleteModalCancelText
+                    }
+                  >
+                    {button.text}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>
@@ -1765,6 +1907,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     flex: 1,
+  },
+  sampleResponseSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sampleResponseButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  sampleResponseButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   responseContainer: {
     backgroundColor: colors.card,

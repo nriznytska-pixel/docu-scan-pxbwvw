@@ -1,5 +1,6 @@
 
 import Constants from 'expo-constants';
+import { supabase } from './supabase';
 
 // Get backend URL from app.json configuration
 const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl;
@@ -54,6 +55,69 @@ async function apiCall<T>(
 }
 
 /**
+ * Authenticated API call wrapper with Supabase session token
+ */
+async function authenticatedApiCall<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<{ data: T | null; error: string | null }> {
+  try {
+    // Get the current session token from Supabase
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      console.error('[API] No active session for authenticated request');
+      return {
+        data: null,
+        error: 'Authentication required. Please log in.',
+      };
+    }
+
+    const url = `${BACKEND_URL}${endpoint}`;
+    console.log(`[API] Authenticated ${options.method || 'GET'} ${url}`);
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        ...options.headers,
+      },
+    });
+
+    console.log(`[API] Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API] Error response:`, errorText);
+      
+      if (response.status === 401) {
+        return {
+          data: null,
+          error: 'Authentication failed. Please log in again.',
+        };
+      }
+      
+      return {
+        data: null,
+        error: `HTTP ${response.status}: ${errorText}`,
+      };
+    }
+
+    const data = await response.json();
+    console.log(`[API] Response data:`, JSON.stringify(data, null, 2));
+
+    return { data, error: null };
+  } catch (error: any) {
+    console.error(`[API] Exception:`, error);
+    return {
+      data: null,
+      error: error?.message || 'Unknown error occurred',
+    };
+  }
+}
+
+/**
  * GET request helper
  */
 export async function apiGet<T>(endpoint: string) {
@@ -85,6 +149,40 @@ export async function apiPut<T>(endpoint: string, body: any) {
  */
 export async function apiDelete<T>(endpoint: string) {
   return apiCall<T>(endpoint, { method: 'DELETE' });
+}
+
+/**
+ * Authenticated GET request helper
+ */
+export async function authenticatedGet<T>(endpoint: string) {
+  return authenticatedApiCall<T>(endpoint, { method: 'GET' });
+}
+
+/**
+ * Authenticated POST request helper
+ */
+export async function authenticatedPost<T>(endpoint: string, body: any) {
+  return authenticatedApiCall<T>(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Authenticated PUT request helper
+ */
+export async function authenticatedPut<T>(endpoint: string, body: any) {
+  return authenticatedApiCall<T>(endpoint, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Authenticated DELETE request helper
+ */
+export async function authenticatedDelete<T>(endpoint: string) {
+  return authenticatedApiCall<T>(endpoint, { method: 'DELETE' });
 }
 
 // ============================================
@@ -119,4 +217,33 @@ export async function getAllScans(): Promise<{ data: Scan[] | null; error: strin
 export async function getScanById(id: string): Promise<{ data: Scan | null; error: string | null }> {
   console.log('[API] Fetching scan by ID:', id);
   return apiGet<Scan>(`/scans/${id}`);
+}
+
+// ============================================
+// GENERATE RESPONSE API
+// ============================================
+
+export interface GenerateResponseRequest {
+  analysis: any; // The full letter analysis object
+}
+
+export interface GenerateResponseResponse {
+  response: string; // The generated Dutch response letter
+}
+
+/**
+ * Generate a professional response letter in Dutch using AI
+ * Requires authentication
+ */
+export async function generateResponseLetter(
+  scanId: string,
+  analysis: any
+): Promise<{ data: GenerateResponseResponse | null; error: string | null }> {
+  console.log('[API] Generating response letter for scan:', scanId);
+  console.log('[API] Analysis data:', JSON.stringify(analysis, null, 2));
+  
+  return authenticatedPost<GenerateResponseResponse>(
+    `/api/scans/${scanId}/generate-response`,
+    { analysis }
+  );
 }
