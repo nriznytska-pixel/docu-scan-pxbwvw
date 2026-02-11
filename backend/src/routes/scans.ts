@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { eq } from "drizzle-orm";
+import { gateway } from "@specific-dev/framework";
+import { generateText } from "ai";
 import * as schema from "../db/schema.js";
 import type { App } from "../index.js";
 
@@ -10,6 +12,14 @@ interface CreateScanBody {
 }
 
 interface GetScanParams {
+  id: string;
+}
+
+interface GenerateResponseBody {
+  analysis: Record<string, unknown>;
+}
+
+interface GenerateResponseParams {
   id: string;
 }
 
@@ -164,6 +174,104 @@ export function register(app: App, fastify: FastifyInstance) {
         return scans;
       } catch (error) {
         app.logger.error({ err: error }, 'Failed to retrieve scans');
+        throw error;
+      }
+    }
+  );
+
+  fastify.post<{ Params: GenerateResponseParams; Body: GenerateResponseBody }>(
+    '/api/scans/:id/generate-response',
+    {
+      schema: {
+        description: 'Generate a professional response letter in Dutch using AI',
+        tags: ['scans'],
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Scan ID' },
+          },
+          required: ['id'],
+        },
+        body: {
+          type: 'object',
+          properties: {
+            analysis: {
+              type: 'object',
+              description: 'Full letter analysis containing sender, type, summary, deadline, amount, urgency, etc.',
+            },
+          },
+          required: ['analysis'],
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              response: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (
+      request: FastifyRequest<{ Params: GenerateResponseParams; Body: GenerateResponseBody }>,
+      reply: FastifyReply
+    ) => {
+      const requireAuth = app.requireAuth();
+      const session = await requireAuth(request, reply);
+      if (!session) return;
+
+      const { id } = request.params as GenerateResponseParams;
+      const { analysis } = request.body as GenerateResponseBody;
+
+      app.logger.info({ scanId: id, userId: session.user.id }, 'Generating response letter');
+
+      try {
+        // Verify scan exists
+        const [scan] = await app.db
+          .select()
+          .from(schema.scans)
+          .where(eq(schema.scans.id, id));
+
+        if (!scan) {
+          app.logger.warn({ scanId: id, userId: session.user.id }, 'Scan not found');
+          return reply.status(404).send({ error: 'Scan not found' });
+        }
+
+        // Build prompt with analysis details
+        const analysisText = JSON.stringify(analysis, null, 2);
+        const prompt = `Based on this letter analysis: ${analysisText}, generate a professional response letter in correct, formal Dutch. The response should be polite, clear, and address the main points of the original letter.`;
+
+        app.logger.info({ scanId: id, userId: session.user.id }, 'Calling Claude API for response generation');
+
+        // Generate response using Claude
+        const { text } = await generateText({
+          model: gateway('anthropic/claude-sonnet-4-20250514'),
+          prompt,
+        });
+
+        app.logger.info(
+          { scanId: id, userId: session.user.id, responseLength: text.length },
+          'Response letter generated successfully'
+        );
+
+        return { response: text };
+      } catch (error) {
+        app.logger.error(
+          { err: error, scanId: id, userId: session.user.id },
+          'Failed to generate response letter'
+        );
         throw error;
       }
     }
