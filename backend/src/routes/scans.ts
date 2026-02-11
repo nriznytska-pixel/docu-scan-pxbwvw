@@ -209,12 +209,6 @@ export function register(app: App, fastify: FastifyInstance) {
               response: { type: 'string' },
             },
           },
-          401: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-            },
-          },
           404: {
             type: 'object',
             properties: {
@@ -228,14 +222,10 @@ export function register(app: App, fastify: FastifyInstance) {
       request: FastifyRequest<{ Params: GenerateResponseParams; Body: GenerateResponseBody }>,
       reply: FastifyReply
     ) => {
-      const requireAuth = app.requireAuth();
-      const session = await requireAuth(request, reply);
-      if (!session) return;
-
       const { id } = request.params as GenerateResponseParams;
       const { analysis } = request.body as GenerateResponseBody;
 
-      app.logger.info({ scanId: id, userId: session.user.id }, 'Generating response letter');
+      app.logger.info({ scanId: id }, 'Generating response letter');
 
       try {
         // Verify scan exists
@@ -245,7 +235,7 @@ export function register(app: App, fastify: FastifyInstance) {
           .where(eq(schema.scans.id, id));
 
         if (!scan) {
-          app.logger.warn({ scanId: id, userId: session.user.id }, 'Scan not found');
+          app.logger.warn({ scanId: id }, 'Scan not found');
           return reply.status(404).send({ error: 'Scan not found' });
         }
 
@@ -253,7 +243,7 @@ export function register(app: App, fastify: FastifyInstance) {
         const analysisText = JSON.stringify(analysis, null, 2);
         const prompt = `Based on this letter analysis: ${analysisText}, generate a professional response letter in correct, formal Dutch. The response should be polite, clear, and address the main points of the original letter.`;
 
-        app.logger.info({ scanId: id, userId: session.user.id }, 'Calling Claude API for response generation');
+        app.logger.info({ scanId: id }, 'Calling Claude API for response generation');
 
         // Generate response using Claude
         const { text } = await generateText({
@@ -262,14 +252,14 @@ export function register(app: App, fastify: FastifyInstance) {
         });
 
         app.logger.info(
-          { scanId: id, userId: session.user.id, responseLength: text.length },
+          { scanId: id, responseLength: text.length },
           'Response letter generated successfully'
         );
 
         return { response: text };
       } catch (error) {
         app.logger.error(
-          { err: error, scanId: id, userId: session.user.id },
+          { err: error, scanId: id },
           'Failed to generate response letter'
         );
         throw error;
