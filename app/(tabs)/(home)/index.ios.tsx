@@ -328,6 +328,57 @@ export default function HomeScreen() {
     }
   };
 
+  const generateSampleResponse = async (analysis: ParsedAnalysisContent) => {
+    console.log('HomeScreen (iOS): User tapped "Sample response letter" button');
+    console.log('HomeScreen (iOS): Generating sample response for analysis:', JSON.stringify(analysis, null, 2));
+    
+    if (!selectedDocument) {
+      console.error('HomeScreen (iOS): No selected document');
+      Alert.alert('Помилка', 'Документ не вибрано');
+      return;
+    }
+    
+    setGeneratingResponse(true);
+    
+    try {
+      const { generateResponseLetter } = await import('@/utils/api');
+      
+      const { data, error } = await generateResponseLetter(selectedDocument.id, analysis);
+      
+      if (error) {
+        console.error('HomeScreen (iOS): Generate response API error:', error);
+        
+        // Check if it's an authentication error
+        if (error.includes('Authentication')) {
+          Alert.alert(
+            'Помилка автентифікації',
+            'Будь ласка, увійдіть в систему знову для використання цієї функції.'
+          );
+        } else {
+          Alert.alert('Помилка', `Не вдалося згенерувати відповідь: ${error}`);
+        }
+        
+        setGeneratingResponse(false);
+        return;
+      }
+      
+      if (data && data.response) {
+        console.log('HomeScreen (iOS): Generated response text:', data.response);
+        setGeneratedResponse(data.response);
+        setGeneratingResponse(false);
+        setShowResponseModal(true);
+      } else {
+        console.error('HomeScreen (iOS): No response text in API response');
+        Alert.alert('Помилка', 'Отримано некоректну відповідь від сервера');
+        setGeneratingResponse(false);
+      }
+    } catch (error: any) {
+      console.error('HomeScreen (iOS): Exception generating sample response:', error);
+      Alert.alert('Помилка', `Не вдалося згенерувати відповідь: ${error?.message || 'Невідома помилка'}`);
+      setGeneratingResponse(false);
+    }
+  };
+
   const copyToClipboard = () => {
     console.log('HomeScreen (iOS): User tapped "Копіювати" button');
     Clipboard.setString(generatedResponse);
@@ -1164,6 +1215,23 @@ export default function HomeScreen() {
                               })}
                             </View>
                           )}
+
+                          <View style={styles.sampleResponseSection}>
+                            <TouchableOpacity
+                              style={[styles.sampleResponseButton, generatingResponse && styles.disabledButton]}
+                              onPress={() => generateSampleResponse(analysis)}
+                              activeOpacity={0.7}
+                              disabled={generatingResponse}
+                            >
+                              <Text style={styles.sampleResponseButtonText}>📝 Шаблон відповіді</Text>
+                            </TouchableOpacity>
+                            {generatingResponse && (
+                              <View style={styles.generatingContainer}>
+                                <ActivityIndicator size="small" color={colors.primary} />
+                                <Text style={styles.generatingText}>Генерація відповіді...</Text>
+                              </View>
+                            )}
+                          </View>
                         </>
                       );
                     })()}
@@ -1647,6 +1715,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     flex: 1,
+  },
+  sampleResponseSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sampleResponseButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  sampleResponseButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   responseContainer: {
     backgroundColor: colors.card,

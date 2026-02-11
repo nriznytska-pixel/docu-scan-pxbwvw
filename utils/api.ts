@@ -233,7 +233,7 @@ export interface GenerateResponseResponse {
 
 /**
  * Generate a professional response letter in Dutch using AI
- * Requires authentication
+ * Public endpoint - no authentication required
  */
 export async function generateResponseLetter(
   scanId: string,
@@ -242,7 +242,7 @@ export async function generateResponseLetter(
   console.log('[API] Generating response letter for scan:', scanId);
   console.log('[API] Analysis data:', JSON.stringify(analysis, null, 2));
   
-  return authenticatedPost<GenerateResponseResponse>(
+  return apiPost<GenerateResponseResponse>(
     `/api/scans/${scanId}/generate-response`,
     { analysis }
   );
