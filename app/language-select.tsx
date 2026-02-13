@@ -10,9 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { IconSymbol } from '@/components/IconSymbol';
 
 interface LanguageOption {
   code: string;
@@ -70,11 +68,9 @@ export default function LanguageSelectScreen() {
     }
   };
 
-  const titleText = '📬 DocuScan';
-  const subtitleLine1 = 'AI-помічник з офіційними листами';
-  const subtitleLine2 = 'Your AI assistant for official letters';
-  const chooseLanguageText = 'Оберіть мову / Choose language';
-  const continueButtonText = 'Продовжити / Continue';
+  const titleText = 'Choose your language';
+  const subtitleText = 'Виберіть мову / Select language';
+  const continueButtonText = 'Continue';
   const isButtonDisabled = !selectedLanguage;
 
   console.log('LanguageSelectScreen: Render state - selectedLanguage:', selectedLanguage, 'isButtonDisabled:', isButtonDisabled);
@@ -87,25 +83,14 @@ export default function LanguageSelectScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>{titleText}</Text>
-          <Text style={styles.subtitleLine1}>{subtitleLine1}</Text>
-          <Text style={styles.subtitleLine2}>{subtitleLine2}</Text>
+          <Text style={styles.subtitle}>{subtitleText}</Text>
         </View>
 
-        <View style={styles.languageSelectorHeader}>
-          <IconSymbol
-            ios_icon_name="globe"
-            android_material_icon_name="language"
-            size={20}
-            color="#1E3A8A"
-          />
-          <Text style={styles.chooseLanguageText}>{chooseLanguageText}</Text>
-        </View>
-
-        <View style={styles.languageList}>
+        <View style={styles.languageGrid}>
           {LANGUAGE_OPTIONS.map((language, index) => {
             const isSelected = selectedLanguage === language.code;
             const cardStyle = isSelected
-              ? styles.languageCardSelected
+              ? [styles.languageCard, styles.languageCardSelected]
               : styles.languageCard;
 
             return (
@@ -115,22 +100,8 @@ export default function LanguageSelectScreen() {
                 onPress={() => handleLanguageSelect(language.code, language.enabled)}
                 activeOpacity={0.7}
               >
-                <View style={styles.languageCardContent}>
-                  <Text style={styles.languageFlag}>{language.flag}</Text>
-                  <View style={styles.languageTextContainer}>
-                    <Text style={styles.languageLabel}>
-                      {language.label}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <IconSymbol
-                      ios_icon_name="checkmark.circle.fill"
-                      android_material_icon_name="check-circle"
-                      size={24}
-                      color={colors.primary}
-                    />
-                  )}
-                </View>
+                <Text style={styles.languageFlag}>{language.flag}</Text>
+                <Text style={styles.languageLabel}>{language.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -155,111 +126,87 @@ export default function LanguageSelectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F8FAFC',
     paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    padding: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
     marginTop: 20,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  subtitleLine1: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1E3A8A',
+    color: '#0F172A',
     textAlign: 'center',
-    marginBottom: 6,
-    letterSpacing: 0.3,
+    marginBottom: 12,
   },
-  subtitleLine2: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E3A8A',
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  languageSelectorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    gap: 8,
-  },
-  chooseLanguageText: {
+  subtitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1E3A8A',
-    marginLeft: 8,
-    letterSpacing: 0.2,
+    fontWeight: '400',
+    color: '#94A3B8',
+    textAlign: 'center',
   },
-  languageList: {
-    marginBottom: 24,
+  languageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+    gap: 12,
   },
   languageCard: {
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 14,
     padding: 16,
-    marginBottom: 12,
+    width: '48%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   languageCardSelected: {
-    backgroundColor: colors.card,
     borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  languageCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59,130,246,0.04)',
   },
   languageFlag: {
-    fontSize: 32,
-    marginRight: 16,
-  },
-  languageTextContainer: {
-    flex: 1,
+    fontSize: 28,
+    marginBottom: 8,
   },
   languageLabel: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#0F172A',
+    textAlign: 'center',
   },
   continueButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: '#3B82F6',
+    borderRadius: 14,
+    height: 52,
     alignItems: 'center',
-    marginTop: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    justifyContent: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
   },
   continueButtonDisabled: {
-    backgroundColor: colors.textSecondary,
+    backgroundColor: '#94A3B8',
     opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   continueButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
