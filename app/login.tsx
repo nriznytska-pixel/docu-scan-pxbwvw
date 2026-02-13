@@ -146,7 +146,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder={emailPlaceholder}
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor="#888888"
               value={email}
               onChangeText={(text) => {
                 setEmail(text.trim());
@@ -161,7 +161,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder={passwordPlaceholder}
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor="#888888"
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: '#555555',
     textAlign: 'center',
     paddingHorizontal: 20,
     marginBottom: 16,
@@ -300,11 +300,11 @@ const styles = StyleSheet.create({
   },
   noAccountText: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: '#444444',
   },
   signupLinkText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
     marginLeft: 4,
   },
