@@ -745,7 +745,7 @@ export default function HomeScreen() {
   const senderName = analysis?.sender || 'Unknown Sender';
   const letterSubject = analysis?.summary_ua || 'No subject';
   const letterDate = selectedDocument ? formatDate(selectedDocument.created_at) : '';
-  const letterReference = selectedDocument?.id.substring(0, 8) || '';
+  const letterReference = selectedDocument ? String(selectedDocument.id).substring(0, 8) : '';
   const bsnDetected = analysis?.bsn_detected || false;
   const deadline = analysis?.deadline;
   const daysRemaining = deadline ? calculateDaysRemaining(deadline) : null;
