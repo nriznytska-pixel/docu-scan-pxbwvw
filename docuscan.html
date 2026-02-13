@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocuScan — Begrijp elke Nederlandse brief</title>
+<meta name="description" content="DocuScan helpt newcomers in Nederland officiële brieven te begrijpen. Scan, vertaal en reageer — in jouw taal.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #4A9FE5;
+  --blue-dark: #2B6CB0;
+  --blue-deep: #1A365D;
+  --blue-light: #EBF5FF;
+  --blue-soft: #F0F7FF;
+  --warm: #FFF8F0;
+  --warm-accent: #F6AD55;
+  --green: #48BB78;
+  --text: #2D3748;
+  --text-light: #718096;
+  --white: #FFFFFF;
+  --bg: #FAFBFE;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(250,251,254,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(74,159,229,0.08);
+  transition: box-shadow 0.3s;
+}
+nav.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.06); }
+nav .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--blue-deep);
+}
+.nav-logo svg { width: 36px; height: 36px; }
+.nav-logo span {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-light);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--blue-dark); }
+.nav-back {
+  font-size: 0.9rem;
+  color: var(--text-light) !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: var(--blue);
+  color: white;
+  box-shadow: 0 4px 14px rgba(74,159,229,0.35);
+}
+.btn-primary:hover {
+  background: var(--blue-dark);
+  box-shadow: 0 6px 20px rgba(74,159,229,0.45);
+  transform: translateY(-2px);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--blue-dark);
+  border: 2px solid var(--blue);
+}
+.btn-outline:hover {
+  background: var(--blue);
+  color: white;
+}
+
+/* ===== HERO ===== */
+.hero {
+  padding: 140px 0 80px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(74,159,229,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -100px; left: -150px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(246,173,85,0.06) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.hero .container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.hero-text h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 3.2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--blue-deep);
+  margin-bottom: 20px;
+}
+.hero-text h1 em {
+  font-style: italic;
+  color: var(--blue);
+}
+.hero-text p {
+  font-size: 1.15rem;
+  color: var(--text-light);
+  margin-bottom: 32px;
+  max-width: 480px;
+}
+.hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+.hero-langs {
+  margin-top: 28px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lang-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: var(--blue-light);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  color: var(--blue-dark);
+  font-weight: 500;
+}
+
+/* Phone mockup */
+.hero-visual {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+.phone {
+  width: 280px;
+  height: 570px;
+  background: var(--white);
+  border-radius: 40px;
+  border: 4px solid #1a1a2e;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.phone-notch {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 28px;
+  background: #1a1a2e;
+  border-radius: 0 0 18px 18px;
+  z-index: 2;
+}
+.phone-screen {
+  width: 100%; height: 100%;
+  padding: 40px 20px 20px;
+  background: linear-gradient(180deg, var(--blue-soft) 0%, var(--white) 40%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.screen-header {
+  text-align: center;
+  padding: 8px 0;
+}
+.screen-header .icon { font-size: 2rem; margin-bottom: 4px; }
+.screen-header h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  color: var(--blue-deep);
+}
+.screen-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.screen-card-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--blue);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.screen-card-text {
+  font-size: 0.75rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.screen-card-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.screen-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+}
+.screen-step .num {
+  width: 20px; height: 20px;
+  background: var(--blue);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.screen-step.done .num { background: var(--green); }
+
+.float-badge {
+  position: absolute;
+  padding: 10px 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  font-size: 0.85rem;
+  font-weight: 600;
+  animation: floatBadge 5s ease-in-out infinite;
+  white-space: nowrap;
+}
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* ===== SECTIONS ===== */
+.how { padding: 100px 0; background: var(--white); }
+.section-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--blue);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--blue-deep);
+  margin-bottom: 16px;
+}
+.section-subtitle {
+  color: var(--text-light);
+  font-size: 1.1rem;
+  max-width: 560px;
+  margin-bottom: 60px;
+}
+
+/* Steps */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+.step {
+  text-align: center;
+  padding: 40px 24px;
+  border-radius: var(--radius);
+  transition: all 0.3s;
+  position: relative;
+}
+.step:hover { background: var(--blue-soft); transform: translateY(-4px); }
+.step-icon {
+  width: 80px; height: 80px;
+  margin: 0 auto 24px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+}
+.step:nth-child(1) .step-icon { background: #EBF5FF; }
+.step:nth-child(2) .step-icon { background: #FEFCE8; }
+.step:nth-child(3) .step-icon { background: #F0FFF4; }
+.step-num {
+  position: absolute;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Fraunces', serif;
+  font-size: 4rem;
+  font-weight: 700;
+  color: rgba(74,159,229,0.07);
+}
+.step h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; color: var(--blue-deep); }
+.step p { color: var(--text-light); font-size: 0.95rem; }
+.steps .step:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  right: -28px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.4rem;
+  color: var(--blue);
+  opacity: 0.4;
+}
+
+/* Features */
+.features { padding: 100px 0; }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+.feature-card {
+  padding: 36px;
+  border-radius: var(--radius);
+  background: var(--white);
+  border: 1px solid rgba(74,159,229,0.1);
+  transition: all 0.3s;
+}
+.feature-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 12px 40px rgba(74,159,229,0.1);
+  transform: translateY(-3px);
+}
+.feature-icon { font-size: 1.8rem; margin-bottom: 16px; }
+.feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--blue-deep); }
+.feature-card p { color: var(--text-light); font-size: 0.95rem; }
+
+/* Scenario */
+.scenario { padding: 100px 0; background: var(--white); }
+.scenario-box {
+  background: var(--warm);
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 800px;
+  margin: 40px auto 0;
+  border: 1px solid rgba(246,173,85,0.2);
+}
+.scenario-box h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  color: var(--blue-deep);
+  margin-bottom: 16px;
+}
+.scenario-box p {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.scenario-box .highlight {
+  background: rgba(72,187,120,0.12);
+  border-left: 3px solid var(--green);
+  padding: 16px 20px;
+  border-radius: 0 12px 12px 0;
+  margin-top: 20px;
+  font-weight: 500;
+  color: var(--blue-deep);
+}
+
+/* Languages */
+.languages { padding: 80px 0; text-align: center; }
+.lang-grid {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+.lang-card {
+  padding: 16px 28px;
+  background: var(--blue-soft);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  color: var(--blue-deep);
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.lang-card:hover { background: var(--blue); color: white; transform: scale(1.05); }
+.lang-flag { font-size: 1.3rem; }
+
+/* Privacy */
+.privacy { padding: 80px 0; }
+.privacy-box {
+  background: linear-gradient(135deg, var(--blue-deep), #2C5282);
+  border-radius: 24px;
+  padding: 60px;
+  color: white;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.privacy-box h2 { font-family: 'Fraunces', serif; font-size: 2rem; margin-bottom: 16px; }
+.privacy-box p { opacity: 0.85; line-height: 1.8; }
+.privacy-list { display: flex; flex-direction: column; gap: 16px; }
+.privacy-item { display: flex; gap: 12px; align-items: flex-start; }
+.privacy-check {
+  width: 28px; height: 28px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+.privacy-item span { font-size: 0.95rem; line-height: 1.5; }
+
+/* CTA */
+.cta { padding: 100px 0; text-align: center; }
+.cta h2 { font-family: 'Fraunces', serif; font-size: 2.6rem; color: var(--blue-deep); margin-bottom: 16px; }
+.cta p { color: var(--text-light); font-size: 1.1rem; margin-bottom: 36px; }
+.store-badges { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--blue-deep);
+  color: white;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.store-badge:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.store-badge .badge-text { text-align: left; }
+.store-badge .badge-text small { font-size: 0.7rem; opacity: 0.7; display: block; }
+.store-badge .badge-text strong { font-size: 1rem; }
+.store-badge .badge-icon { font-size: 1.6rem; }
+
+/* Footer */
+footer {
+  padding: 48px 0;
+  border-top: 1px solid rgba(74,159,229,0.1);
+  text-align: center;
+}
+footer p { color: var(--text-light); font-size: 0.85rem; }
+footer a { color: var(--blue); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+.footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .hero .container { grid-template-columns: 1fr; text-align: center; }
+  .hero-text h1 { font-size: 2.2rem; }
+  .hero-text p { max-width: 100%; }
+  .hero-buttons { justify-content: center; }
+  .hero-langs { justify-content: center; }
+  .hero-visual { margin-top: 40px; }
+  .phone { width: 240px; height: 490px; }
+  .float-badge { display: none; }
+  .steps { grid-template-columns: 1fr; gap: 24px; }
+  .steps .step::after { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+  .privacy-box { grid-template-columns: 1fr; padding: 36px; }
+  .scenario-box { padding: 28px; }
+  .section-title { font-size: 1.8rem; }
+  .cta h2 { font-size: 1.9rem; }
+  .nav-links a:not(.btn):not(.nav-back) { display: none; }
+}
+
+/* Animations */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="container">
+    <a href="#" class="nav-logo">
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="3" width="22" height="28" rx="3" stroke="#4A9FE5" stroke-width="2.5" fill="none"/>
+        <line x1="10" y1="10" x2="20" y2="10" stroke="#4A9FE5" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="10" y1="15" x2="20" y2="15" stroke="#4A9FE5" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="10" y1="20" x2="16" y2="20" stroke="#4A9FE5" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="25" cy="25" r="9" fill="white" stroke="#4A9FE5" stroke-width="2.5"/>
+        <path d="M21 25.5L23.5 28L29 22" stroke="#4A9FE5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DocuScan</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-back">← Taalverbinding</a>
+      <a href="#hoe">Hoe werkt het</a>
+      <a href="#functies">Functies</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#download" class="btn btn-primary">Downloaden</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-text">
+      <h1>Begrijp elke<br>Nederlandse brief <em>direct</em></h1>
+      <p>Een brief ontvangen die je niet kunt lezen? Maak een foto met je telefoon. DocuScan vertaalt, legt uit en helpt je reageren — in jouw taal.</p>
+      <div class="hero-buttons">
+        <a href="#download" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Gratis downloaden
+        </a>
+        <a href="#hoe" class="btn btn-outline">Hoe werkt het</a>
+      </div>
+      <div class="hero-langs">
+        <span class="lang-badge">🇺🇦 Українська</span>
+        <span class="lang-badge">🇬🇧 English</span>
+        <span class="lang-badge">🇵🇱 Polski</span>
+        <span class="lang-badge">🇹🇷 Türkçe</span>
+        <span class="lang-badge">🇸🇦 العربية</span>
+        <span class="lang-badge">+4 meer</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="float-badge" style="top: 60px; right: 0; animation: floatBadge 5s ease-in-out infinite; animation-delay: -1s;">✅ Vertaald!</div>
+      <div class="float-badge" style="bottom: 100px; left: 0; animation: floatBadge 5s ease-in-out infinite; animation-delay: -3s;">📋 Actieplan klaar</div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="screen-header">
+            <div class="icon">📬</div>
+            <h3>DocuScan</h3>
+          </div>
+          <div class="screen-card">
+            <div class="screen-card-label">📄 Belastingdienst</div>
+            <div class="screen-card-text">Ви повинні подати декларацію про доходи до 1 березня. Якщо не відповісте, вам може бути нараховано штраф.</div>
+          </div>
+          <div class="screen-card">
+            <div class="screen-card-label">📋 Що робити</div>
+            <div class="screen-card-steps">
+              <div class="screen-step done"><span class="num">✓</span> Прочитати лист</div>
+              <div class="screen-step"><span class="num">2</span> Зібрати довідки</div>
+              <div class="screen-step"><span class="num">3</span> Подати до 1 березня</div>
+            </div>
+          </div>
+          <div class="screen-card" style="background: #F0FFF4;">
+            <div class="screen-card-label" style="color: #48BB78;">✉️ Antwoord klaar</div>
+            <div class="screen-card-text" style="font-size:0.68rem;">Geachte heer/mevrouw, Hierbij stuur ik u de gevraagde inkomens...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOE WERKT HET -->
+<section class="how" id="hoe">
+  <div class="container">
+    <div class="section-label">Hoe werkt het</div>
+    <h2 class="section-title">Drie stappen naar duidelijkheid</h2>
+    <p class="section-subtitle">Nooit meer raden wat er in je brief staat of wat je ermee moet doen.</p>
+    <div class="steps">
+      <div class="step fade-in">
+        <div class="step-num">1</div>
+        <div class="step-icon">📸</div>
+        <h3>Scan</h3>
+        <p>Maak een foto van je brief. De AI herkent direct de afzender en het type document.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">2</div>
+        <div class="step-icon">💡</div>
+        <h3>Begrijp</h3>
+        <p>Krijg een duidelijke uitleg in jouw taal. Geen letterlijke vertaling — maar een echte uitleg van wat het betekent.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">3</div>
+        <div class="step-icon">✉️</div>
+        <h3>Reageer</h3>
+        <p>Ontvang een actieplan met deadlines en een voorbeeldbrief in correct Nederlands, klaar om te versturen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCTIES -->
+<section class="features" id="functies">
+  <div class="container">
+    <div class="section-label">Functies</div>
+    <h2 class="section-title">Meer dan alleen vertalen</h2>
+    <p class="section-subtitle">DocuScan begrijpt de Nederlandse bureaucratie, zodat jij dat niet hoeft te doen.</p>
+    <div class="features-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🏛️</div>
+        <h3>Slimme herkenning</h3>
+        <p>Herkent automatisch of je brief van de Belastingdienst, gemeente, UWV, IND, SVB of een andere organisatie komt — en past de uitleg daarop aan.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📋</div>
+        <h3>Actieplan met deadlines</h3>
+        <p>Niet alleen de brief begrijpen — precies weten wat je moet doen, in welke volgorde en voor wanneer. Mis nooit meer een belangrijke datum.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">✉️</div>
+        <h3>Antwoordbrief generator</h3>
+        <p>Moet je terugschrijven? Krijg een voorbeeldantwoord in correct Nederlands. Ideaal voor bezwaar, betalingsregelingen of uitstel aanvragen.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🌍</div>
+        <h3>9 talen</h3>
+        <p>Oekraïens, Russisch, Engels, Pools, Turks, Duits, Frans, Spaans en Arabisch. Meer talen volgen binnenkort.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRAKTIJKVOORBEELD -->
+<section class="scenario" id="voorbeeld">
+  <div class="container">
+    <div class="section-label">Uit de praktijk</div>
+    <h2 class="section-title">Waarom DocuScan nodig is</h2>
+    <div class="scenario-box fade-in">
+      <h3>📮 Een brief van de SVB</h3>
+      <p>Een Oekraïense ontheemde ontving een brief van de SVB met het verzoek om een inkomensverklaring. Omdat zij de inhoud en urgentie niet begreep, reageerde zij niet.</p>
+      <p>Na enkele weken werd haar kinderbijslag stopgezet en ontving zij een boete van enkele duizenden euro's. Pas na weken van stress en met hulp van een tolk werd de situatie opgelost.</p>
+      <div class="highlight">
+        ✅ <strong>Met DocuScan</strong> had zij de brief direct begrepen, een concreet stappenplan ontvangen én een antwoord in correct Nederlands kunnen versturen — binnen enkele minuten.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TALEN -->
+<section class="languages" id="talen">
+  <div class="container">
+    <div class="section-label">Talen</div>
+    <h2 class="section-title">Jouw brief, jouw taal</h2>
+    <div class="lang-grid">
+      <div class="lang-card"><span class="lang-flag">🇺🇦</span> Українська</div>
+      <div class="lang-card"><span class="lang-flag">🇷🇺</span> Русский</div>
+      <div class="lang-card"><span class="lang-flag">🇬🇧</span> English</div>
+      <div class="lang-card"><span class="lang-flag">🇵🇱</span> Polski</div>
+      <div class="lang-card"><span class="lang-flag">🇹🇷</span> Türkçe</div>
+      <div class="lang-card"><span class="lang-flag">🇩🇪</span> Deutsch</div>
+      <div class="lang-card"><span class="lang-flag">🇫🇷</span> Français</div>
+      <div class="lang-card"><span class="lang-flag">🇪🇸</span> Español</div>
+      <div class="lang-card"><span class="lang-flag">🇸🇦</span> العربية</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="privacy" id="privacy">
+  <div class="container">
+    <div class="privacy-box fade-in">
+      <div>
+        <h2>🔒 Jouw privacy voorop</h2>
+        <p>Wij verwerken gevoelige brieven, daarom nemen wij privacy zeer serieus. DocuScan is ontworpen met privacy als uitgangspunt — niet als bijzaak.</p>
+      </div>
+      <div class="privacy-list">
+        <div class="privacy-item">
+          <div class="privacy-check">🗑️</div>
+          <span><strong>Direct verwijderd.</strong> Je foto's worden onmiddellijk na verwerking verwijderd. Er wordt niets opgeslagen.</span>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-check">🔒</div>
+          <span><strong>BSN-maskering.</strong> Gevoelige nummers zoals BSN worden automatisch gedetecteerd en verborgen.</span>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-check">🛡️</div>
+          <span><strong>AVG-compliant.</strong> Volledig conform de Nederlandse en Europese privacywetgeving (AVG/GDPR).</span>
+        </div>
+        <div class="privacy-item">
+          <div class="privacy-check">🔐</div>
+          <span><strong>Versleuteld.</strong> Alle verwerking vindt plaats in een versleutelde sessie.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="download">
+  <div class="container">
+    <h2>Klaar om je<br>Nederlandse post te begrijpen?</h2>
+    <p>Download DocuScan gratis en voel je nooit meer verloren.</p>
+    <div class="store-badges">
+      <a href="#" class="store-badge">
+        <span class="badge-icon">▶️</span>
+        <span class="badge-text">
+          <small>DOWNLOADEN VIA</small>
+          <strong>Google Play</strong>
+        </span>
+      </a>
+      <a href="#" class="store-badge" style="opacity: 0.5; pointer-events: none;">
+        <span class="badge-icon">🍎</span>
+        <span class="badge-text">
+          <small>BINNENKORT</small>
+          <strong>App Store</strong>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="index.html">← Taalverbinding</a>
+      <a href="#">Privacybeleid</a>
+      <a href="mailto:info@taalverbinding.com">info@taalverbinding.com</a>
+    </div>
+    <p>© 2026 Taalverbinding. DocuScan is gratis en zonder winstoogmerk.</p>
+    <p style="margin-top: 8px; font-size: 0.8rem; opacity: 0.6;">Gegenereerde brieven zijn slechts voorbeelden, geen juridisch advies.</p>
+  </div>
+</footer>
+
+<script>
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 10);
+});
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
