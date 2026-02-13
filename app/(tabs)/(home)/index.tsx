@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Linking,
   Clipboard,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,6 +39,7 @@ interface ParsedAnalysisContent {
   urgency?: 'low' | 'medium' | 'high';
   templates?: string[];
   steps?: string[];
+  bsn_detected?: boolean;
 }
 
 interface ScannedDocument {
@@ -80,6 +82,7 @@ export default function HomeScreen() {
   const [detailImageError, setDetailImageError] = useState(false);
   const [scanCount, setScanCount] = useState(0);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [activeTab, setActiveTab] = useState<'summary' | 'action' | 'response'>('summary');
   const FREE_SCAN_LIMIT = 3;
   
   // Custom modal state
@@ -839,12 +842,14 @@ export default function HomeScreen() {
     console.log('HomeScreen: Document has analysis:', !!doc.analysis);
     setSelectedDocument(doc);
     setDetailImageError(false);
+    setActiveTab('summary');
   };
 
   const closeDocumentView = () => {
     console.log('HomeScreen: Closing document view');
     setSelectedDocument(null);
     setDetailImageError(false);
+    setActiveTab('summary');
   };
 
   const confirmDeleteDocument = (docId: string) => {
@@ -933,6 +938,14 @@ export default function HomeScreen() {
     );
   };
 
+  const calculateDaysRemaining = (deadline: string): number => {
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    const diffTime = deadlineDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
   const emptyStateTitle = translate('home', 'emptyStateTitle', selectedLanguage);
   const emptyStateSubtitle = translate('home', 'emptyStateSubtitle', selectedLanguage);
@@ -946,6 +959,16 @@ export default function HomeScreen() {
       </SafeAreaView>
     );
   }
+
+  const analysis = selectedDocument ? parseAnalysis(selectedDocument.analysis) : null;
+  const senderName = analysis?.sender || 'Unknown Sender';
+  const letterSubject = analysis?.summary_ua || 'No subject';
+  const letterDate = selectedDocument ? formatDate(selectedDocument.created_at) : '';
+  const letterReference = selectedDocument?.id.substring(0, 8) || '';
+  const bsnDetected = analysis?.bsn_detected || false;
+  const deadline = analysis?.deadline;
+  const daysRemaining = deadline ? calculateDaysRemaining(deadline) : null;
+  const urgency = analysis?.urgency;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -982,11 +1005,11 @@ export default function HomeScreen() {
           data={documents}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
-            const analysis = parseAnalysis(item.analysis);
-            const senderText = analysis?.sender || 'Unknown';
-            const titleText = analysis?.summary_ua || 'No title';
-            const dateText = formatDate(item.created_at);
-            const deadlineText = analysis?.deadline;
+            const itemAnalysis = parseAnalysis(item.analysis);
+            const itemSenderText = itemAnalysis?.sender || 'Unknown';
+            const itemTitleText = itemAnalysis?.summary_ua || 'No title';
+            const itemDateText = formatDate(item.created_at);
+            const itemDeadlineText = itemAnalysis?.deadline;
             
             return (
               <TouchableOpacity
@@ -996,16 +1019,16 @@ export default function HomeScreen() {
               >
                 <View style={styles.senderBadge}>
                   <View style={styles.greenDot} />
-                  <Text style={styles.senderBadgeText}>{senderText}</Text>
+                  <Text style={styles.senderBadgeText}>{itemSenderText}</Text>
                 </View>
                 <Text style={styles.letterTitle} numberOfLines={2}>
-                  {titleText}
+                  {itemTitleText}
                 </Text>
-                <Text style={styles.dateText}>{dateText}</Text>
-                {deadlineText && (
+                <Text style={styles.dateText}>{itemDateText}</Text>
+                {itemDeadlineText && (
                   <View style={styles.deadlineBadge}>
                     <Text style={styles.deadlineBadgeText}>
-                      Deadline: {deadlineText}
+                      Deadline: {itemDeadlineText}
                     </Text>
                   </View>
                 )}
@@ -1029,6 +1052,185 @@ export default function HomeScreen() {
           color="#FFFFFF"
         />
       </TouchableOpacity>
+
+      {/* Analysis Result Modal */}
+      <Modal
+        visible={!!selectedDocument}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={closeDocumentView}
+      >
+        <SafeAreaView style={styles.detailContainer} edges={['top']}>
+          {/* Top Section */}
+          <View style={styles.detailHeader}>
+            <TouchableOpacity
+              onPress={closeDocumentView}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol
+                ios_icon_name="arrow.left"
+                android_material_icon_name="arrow-back"
+                size={24}
+                color="#475569"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.detailScrollView} contentContainerStyle={styles.detailScrollContent}>
+            {/* Sender Badge */}
+            <View style={styles.detailSenderBadge}>
+              <View style={styles.greenDot} />
+              <Text style={styles.detailSenderText}>{senderName}</Text>
+            </View>
+
+            {/* Title */}
+            <Text style={styles.detailTitle}>{letterSubject}</Text>
+
+            {/* Subtitle */}
+            <View style={styles.detailSubtitleRow}>
+              <Text style={styles.detailSubtitle}>{letterDate}</Text>
+              <Text style={styles.detailSubtitle}> • </Text>
+              <Text style={styles.detailSubtitle}>Ref: {letterReference}</Text>
+            </View>
+
+            {/* BSN Masked Badge */}
+            {bsnDetected && (
+              <View style={styles.bsnBadge}>
+                <Text style={styles.bsnBadgeText}>🔒 BSN: ●●●● ●● ●●● — masked</Text>
+              </View>
+            )}
+
+            {/* Urgency Banner */}
+            {deadline && (
+              <View style={styles.urgencyBanner}>
+                <View style={styles.urgencyBannerTop}>
+                  <Text style={styles.urgencyBannerIcon}>⚠️</Text>
+                  <Text style={styles.urgencyBannerTitle}>Deadline: {deadline}</Text>
+                </View>
+                {daysRemaining !== null && (
+                  <Text style={styles.urgencyBannerSubtext}>
+                    {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Deadline passed'}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {/* Tabs */}
+            <View style={styles.tabBar}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'summary' && styles.tabActive]}
+                onPress={() => setActiveTab('summary')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabText, activeTab === 'summary' && styles.tabTextActive]}>
+                  📋 Summary
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'action' && styles.tabActive]}
+                onPress={() => setActiveTab('action')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabText, activeTab === 'action' && styles.tabTextActive]}>
+                  🎯 Action
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'response' && styles.tabActive]}
+                onPress={() => setActiveTab('response')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabText, activeTab === 'response' && styles.tabTextActive]}>
+                  ✉️ Response
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Tab Content */}
+            {activeTab === 'summary' && analysis && (
+              <View style={styles.tabContent}>
+                {/* Summary Card */}
+                <View style={styles.summaryCard}>
+                  <View style={[styles.iconContainer, { backgroundColor: 'rgba(59,130,246,0.06)' }]}>
+                    <Text style={styles.iconEmoji}>📄</Text>
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardText}>{analysis.summary_ua}</Text>
+                  </View>
+                </View>
+
+                {/* Type Card */}
+                {analysis.type && (
+                  <View style={styles.summaryCard}>
+                    <View style={[styles.iconContainer, { backgroundColor: 'rgba(124,58,237,0.06)' }]}>
+                      <Text style={styles.iconEmoji}>📋</Text>
+                    </View>
+                    <View style={styles.summaryCardContent}>
+                      <Text style={styles.summaryCardText}>Type: {analysis.type}</Text>
+                      <Text style={styles.summaryCardSubtext}>Document category</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Amount Card */}
+                {analysis.amount && (
+                  <View style={styles.summaryCard}>
+                    <View style={[styles.iconContainer, { backgroundColor: 'rgba(16,185,129,0.06)' }]}>
+                      <Text style={styles.iconEmoji}>💰</Text>
+                    </View>
+                    <View style={styles.summaryCardContent}>
+                      <Text style={styles.summaryCardText}>Amount: €{analysis.amount}</Text>
+                      <Text style={styles.summaryCardSubtext}>Payment or benefit amount</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Urgency Card */}
+                {urgency && (
+                  <View style={styles.summaryCard}>
+                    <View style={[styles.iconContainer, { backgroundColor: 'rgba(217,119,6,0.06)' }]}>
+                      <Text style={styles.iconEmoji}>⚡</Text>
+                    </View>
+                    <View style={styles.summaryCardContent}>
+                      <Text style={styles.summaryCardText}>
+                        Urgency: {urgency.charAt(0).toUpperCase() + urgency.slice(1)}
+                      </Text>
+                      <Text style={styles.summaryCardSubtext}>Priority level</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Tips Card */}
+                <View style={styles.summaryCard}>
+                  <View style={[styles.iconContainer, { backgroundColor: 'rgba(124,58,237,0.06)' }]}>
+                    <Text style={styles.iconEmoji}>💡</Text>
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardText}>
+                      Need help understanding terms like{' '}
+                      <Text style={styles.clickableTerm}>zorgtoeslag</Text> or{' '}
+                      <Text style={styles.clickableTerm}>bezwaar</Text>?
+                    </Text>
+                    <Text style={styles.summaryCardSubtext}>Tap highlighted terms for explanations</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {activeTab === 'action' && (
+              <View style={styles.tabContent}>
+                <Text style={styles.placeholderText}>Action items will be displayed here</Text>
+              </View>
+            )}
+
+            {activeTab === 'response' && (
+              <View style={styles.tabContent}>
+                <Text style={styles.placeholderText}>Response templates will be displayed here</Text>
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* Custom Alert Modal */}
       <Modal
@@ -1198,6 +1400,179 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 24,
     elevation: 8,
+  },
+  detailContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  detailHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#F8FAFC',
+  },
+  detailScrollView: {
+    flex: 1,
+  },
+  detailScrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  detailSenderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  detailSenderText: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  detailTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 8,
+    lineHeight: 28,
+  },
+  detailSubtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  detailSubtitle: {
+    fontSize: 13,
+    color: '#94A3B8',
+  },
+  bsnBadge: {
+    backgroundColor: 'rgba(220,38,38,0.06)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+  },
+  bsnBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  urgencyBanner: {
+    backgroundColor: 'rgba(217,119,6,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(217,119,6,0.12)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  urgencyBannerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  urgencyBannerIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  urgencyBannerTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D97706',
+  },
+  urgencyBannerSubtext: {
+    fontSize: 13,
+    color: '#475569',
+    marginTop: 4,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 20,
+  },
+  tab: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#3B82F6',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+  },
+  tabContent: {
+    flex: 1,
+  },
+  summaryCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  iconEmoji: {
+    fontSize: 18,
+  },
+  summaryCardContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  summaryCardText: {
+    fontSize: 14,
+    color: '#0F172A',
+    lineHeight: 21.7,
+  },
+  summaryCardSubtext: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  clickableTerm: {
+    color: '#3B82F6',
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'dashed',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 40,
   },
   deleteModalOverlay: {
     flex: 1,
