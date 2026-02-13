@@ -57,18 +57,6 @@ const TEMPLATE_LABELS: Record<string, string> = {
   'adresbevestiging': '📍 Підтвердити адресу',
 };
 
-const LANGUAGES = [
-  { code: 'uk', label: '🇺🇦 Українська' },
-  { code: 'ru', label: '🇷🇺 Русский' },
-  { code: 'en', label: '🇬🇧 English' },
-  { code: 'pl', label: '🇵🇱 Polski' },
-  { code: 'tr', label: '🇹🇷 Türkçe' },
-  { code: 'de', label: '🇩🇪 Deutsch' },
-  { code: 'fr', label: '🇫🇷 Français' },
-  { code: 'es', label: '🇪🇸 Español' },
-  { code: 'ar', label: '🇸🇦 العربية' },
-];
-
 const DEFAULT_LANGUAGE = 'uk';
 
 export default function HomeScreen() {
@@ -90,7 +78,6 @@ export default function HomeScreen() {
   const [generatedResponse, setGeneratedResponse] = useState<string>('');
   const [imageLoadErrors, setImageLoadErrors] = useState<Record<string, boolean>>({});
   const [detailImageError, setDetailImageError] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [scanCount, setScanCount] = useState(0);
   const [showPaywall, setShowPaywall] = useState(false);
   const FREE_SCAN_LIMIT = 3;
@@ -913,19 +900,37 @@ export default function HomeScreen() {
     });
   };
 
-  const openSettings = () => {
-    console.log('HomeScreen: User tapped settings button');
-    setShowSettings(true);
-  };
-
   const handleLogout = async () => {
     console.log('HomeScreen: User tapped logout');
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('HomeScreen: Logout error:', error);
-      showCustomAlert('Помилка', 'Не вдалося вийти');
-    }
+    
+    const logoutModalTitle = translate('settings', 'logoutModalTitle', selectedLanguage);
+    const logoutModalMessage = translate('settings', 'logoutModalMessage', selectedLanguage);
+    const cancelButtonText = translate('settings', 'cancel', selectedLanguage);
+    const logoutButtonText = translate('settings', 'logout', selectedLanguage);
+    
+    showCustomAlert(
+      logoutModalTitle,
+      logoutModalMessage,
+      [
+        {
+          text: cancelButtonText,
+          style: 'cancel',
+          onPress: () => console.log('Logout cancelled'),
+        },
+        {
+          text: logoutButtonText,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('HomeScreen: Logout error:', error);
+              showCustomAlert('Помилка', 'Не вдалося вийти');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
@@ -933,10 +938,11 @@ export default function HomeScreen() {
   const galleryButtonText = translate('home', 'chooseFromGallery', selectedLanguage);
   const emptyStateText = translate('home', 'emptyState', selectedLanguage);
   const emptyStateSubtext = translate('home', 'emptyStateAction', selectedLanguage);
-  const settingsButtonText = translate('home', 'settings', selectedLanguage);
+  const logoutButtonText = translate('home', 'logout', selectedLanguage);
   const uploadingText = 'Завантаження...';
   const documentText = 'Лист';
   const imageDeletedText = 'Фото видалено для безпеки';
+  const backButtonText = translate('letterDetail', 'back', selectedLanguage);
   
   const analysisTitleText = translate('letterDetail', 'analysisTitle', selectedLanguage);
   const senderLabel = translate('letterDetail', 'sender', selectedLanguage);
@@ -964,68 +970,6 @@ export default function HomeScreen() {
     );
   }
 
-  if (showSettings) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowSettings(false)} style={{ padding: 8 }}>
-            <Text style={{ fontSize: 18, color: colors.primary, fontWeight: '600' }}>← Назад</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { flex: 1, textAlign: 'center' }]}>⚙️ {settingsButtonText}</Text>
-          <View style={{ width: 70 }} />
-        </View>
-        <ScrollView style={styles.scrollView} contentContainerStyle={{ padding: 20 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 16 }}>
-            Мова перекладу:
-          </Text>
-          {LANGUAGES.map((lang) => (
-            <TouchableOpacity
-              key={lang.code}
-              onPress={() => {
-                console.log('Settings: Language selected:', lang.code);
-                setSelectedLanguage(lang.code);
-              }}
-              activeOpacity={0.7}
-              style={{
-                backgroundColor: selectedLanguage === lang.code ? '#007AFF' : '#E5E5EA',
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                borderRadius: 10,
-                marginBottom: 8,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontWeight: '500',
-                  color: selectedLanguage === lang.code ? '#FFFFFF' : '#000000',
-                }}
-              >
-                {lang.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity
-            onPress={handleLogout}
-            activeOpacity={0.7}
-            style={{
-              backgroundColor: '#FF3B30',
-              paddingVertical: 14,
-              paddingHorizontal: 20,
-              borderRadius: 10,
-              marginTop: 32,
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' }}>
-              Вийти
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -1038,18 +982,6 @@ export default function HomeScreen() {
           />
           <Text style={styles.headerTitle}>{headerTitle}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={openSettings}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <IconSymbol
-            ios_icon_name="gear"
-            android_material_icon_name="settings"
-            size={28}
-            color={colors.text}
-          />
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -1151,6 +1083,20 @@ export default function HomeScreen() {
           />
           <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout} 
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            ios_icon_name="rectangle.portrait.and.arrow.right"
+            android_material_icon_name="logout"
+            size={20}
+            color="#FFFFFF"
+          />
+          <Text style={styles.logoutButtonText}>{logoutButtonText}</Text>
+        </TouchableOpacity>
       </View>
 
       <Modal
@@ -1217,7 +1163,7 @@ export default function HomeScreen() {
               style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={styles.backButtonText}>← Назад</Text>
+              <Text style={styles.backButtonText}>{backButtonText}</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Деталі листа</Text>
             <View style={{ width: 80 }} />
@@ -1409,7 +1355,7 @@ export default function HomeScreen() {
               style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={styles.backButtonText}>← Назад</Text>
+              <Text style={styles.backButtonText}>{backButtonText}</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{responseTitleText}</Text>
             <View style={{ width: 80 }} />
@@ -1583,9 +1529,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: 12,
   },
-  settingsButton: {
-    padding: 8,
-  },
   scrollView: {
     flex: 1,
   },
@@ -1710,11 +1653,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.primary,
+    marginBottom: 12,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
+    marginLeft: 8,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF3B30',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  logoutButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginLeft: 8,
   },
   modalContainer: {
