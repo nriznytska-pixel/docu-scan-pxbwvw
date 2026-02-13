@@ -1317,9 +1317,11 @@ export default function HomeScreen() {
       >
         <View style={styles.deleteModalOverlay}>
           <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Видалити лист?</Text>
+            <Text style={styles.deleteModalTitle}>
+              {translate('deleteDialog', 'title', selectedLanguage)}
+            </Text>
             <Text style={styles.deleteModalMessage}>
-              Ви впевнені, що хочете видалити цей лист? Цю дію не можна скасувати.
+              {translate('deleteDialog', 'message', selectedLanguage)}
             </Text>
             <View style={styles.deleteModalButtons}>
               <TouchableOpacity
@@ -1327,14 +1329,18 @@ export default function HomeScreen() {
                 onPress={cancelDelete}
                 activeOpacity={0.7}
               >
-                <Text style={styles.deleteModalCancelText}>Скасувати</Text>
+                <Text style={styles.deleteModalCancelText}>
+                  {translate('deleteDialog', 'cancel', selectedLanguage)}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.deleteModalConfirmButton}
                 onPress={deleteDocument}
                 activeOpacity={0.7}
               >
-                <Text style={styles.deleteModalConfirmText}>Видалити</Text>
+                <Text style={styles.deleteModalConfirmText}>
+                  {translate('deleteDialog', 'delete', selectedLanguage)}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
