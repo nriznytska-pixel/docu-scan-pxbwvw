@@ -5,7 +5,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Image,
   Platform,
   Modal,
@@ -234,189 +234,6 @@ export default function HomeScreen() {
       console.error('HomeScreen (iOS): Failed to parse analysis JSON:', e);
       return null;
     }
-  };
-
-  const generateGoogleCalendarUrl = (sender: string, deadline: string, summary: string): string => {
-    console.log('HomeScreen (iOS): Generating Google Calendar URL');
-    console.log('HomeScreen (iOS): Sender:', sender);
-    console.log('HomeScreen (iOS): Deadline:', deadline);
-    console.log('HomeScreen (iOS): Summary:', summary);
-    
-    const title = `Дедлайн: ${sender}`;
-    const formattedDate = `${deadline}/${deadline}`;
-    
-    const encodedTitle = encodeURIComponent(title);
-    const encodedDetails = encodeURIComponent(summary);
-    
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${formattedDate}&details=${encodedDetails}`;
-    
-    console.log('HomeScreen (iOS): Generated calendar URL:', url);
-    return url;
-  };
-
-  const openGoogleCalendar = (sender: string, deadline: string, summary: string) => {
-    console.log('HomeScreen (iOS): User tapped "Додати в календар" button');
-    
-    const calendarUrl = generateGoogleCalendarUrl(sender, deadline, summary);
-    
-    Linking.openURL(calendarUrl)
-      .then(() => {
-        console.log('HomeScreen (iOS): Successfully opened Google Calendar');
-      })
-      .catch((err) => {
-        console.error('HomeScreen (iOS): Failed to open Google Calendar:', err);
-        Alert.alert('Помилка', 'Не вдалося відкрити Google Calendar');
-      });
-  };
-
-  const handleTemplatePress = async (templateType: string, analysis: ParsedAnalysisContent) => {
-    console.log('HomeScreen (iOS): User tapped template button:', templateType);
-    console.log('HomeScreen (iOS): Analysis data:', JSON.stringify(analysis, null, 2));
-    
-    setGeneratingResponse(true);
-    
-    const webhookUrl = 'https://hook.eu1.make.com/w2ulfcq5936zqn4vwbjd6uy3g90aijuc';
-    
-    const requestBody = {
-      token: 'docuscan_secret_2024',
-      sender: analysis.sender || '',
-      type: analysis.type || '',
-      summary_ua: analysis.summary_ua || '',
-      deadline: analysis.deadline || '',
-      amount: analysis.amount || null,
-      template_type: templateType,
-    };
-    
-    console.log('HomeScreen (iOS): Sending webhook request to:', webhookUrl);
-    console.log('HomeScreen (iOS): Request body:', JSON.stringify(requestBody, null, 2));
-    
-    try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-      
-      console.log('HomeScreen (iOS): Webhook response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const responseData = await response.json();
-      console.log('HomeScreen (iOS): Webhook response data:', JSON.stringify(responseData, null, 2));
-      
-      const content = responseData?.data?.content || responseData?.content;
-      if (content && content[0]) {
-        const responseText = content[0].text;
-        console.log('HomeScreen (iOS): Extracted response text:', responseText);
-        
-        setGeneratedResponse(responseText);
-        setGeneratingResponse(false);
-        setShowResponseModal(true);
-      } else {
-        console.error('HomeScreen (iOS): Unexpected response structure');
-        Alert.alert('Помилка', 'Отримано некоректну відповідь від сервера');
-        setGeneratingResponse(false);
-      }
-    } catch (error) {
-      console.error('HomeScreen (iOS): Error calling webhook:', error);
-      Alert.alert('Помилка', 'Не вдалося згенерувати відповідь. Спробуйте ще раз.');
-      setGeneratingResponse(false);
-    }
-  };
-
-  const generateSampleResponse = async (analysis: ParsedAnalysisContent) => {
-    console.log('HomeScreen (iOS): User tapped "Sample response letter" button');
-    console.log('HomeScreen (iOS): Generating sample response for analysis:', JSON.stringify(analysis, null, 2));
-    
-    if (!selectedDocument) {
-      console.error('HomeScreen (iOS): No selected document');
-      Alert.alert('Помилка', 'Документ не вибрано');
-      return;
-    }
-    
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - Using scan UUID:', selectedDocument.id);
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - Scan ID type:', typeof selectedDocument.id);
-    
-    setGeneratingResponse(true);
-    
-    try {
-      const { generateResponseLetter } = await import('@/utils/api');
-      
-      console.log('HomeScreen (iOS): 🔍 Calling generateResponseLetter with scanId:', selectedDocument.id);
-      const { data, error } = await generateResponseLetter(selectedDocument.id, analysis);
-      
-      if (error) {
-        console.error('HomeScreen (iOS): Generate response API error:', error);
-        
-        // Check if it's an authentication error
-        if (error.includes('Authentication')) {
-          Alert.alert(
-            'Помилка автентифікації',
-            'Будь ласка, увійдіть в систему знову для використання цієї функції.'
-          );
-        } else {
-          Alert.alert('Помилка', `Не вдалося згенерувати відповідь: ${error}`);
-        }
-        
-        setGeneratingResponse(false);
-        return;
-      }
-      
-      if (data && data.response) {
-        console.log('HomeScreen (iOS): Generated response text:', data.response);
-        setGeneratedResponse(data.response);
-        setGeneratingResponse(false);
-        setShowResponseModal(true);
-      } else {
-        console.error('HomeScreen (iOS): No response text in API response');
-        Alert.alert('Помилка', 'Отримано некоректну відповідь від сервера');
-        setGeneratingResponse(false);
-      }
-    } catch (error: any) {
-      console.error('HomeScreen (iOS): Exception generating sample response:', error);
-      Alert.alert('Помилка', `Не вдалося згенерувати відповідь: ${error?.message || 'Невідома помилка'}`);
-      setGeneratingResponse(false);
-    }
-  };
-
-  const copyToClipboard = () => {
-    console.log('HomeScreen (iOS): User tapped "Копіювати" button');
-    Clipboard.setString(generatedResponse);
-    Alert.alert('Успіх', 'Текст скопійовано в буфер обміну');
-  };
-
-  const sendEmail = () => {
-    console.log('HomeScreen (iOS): User tapped "Надіслати email" button');
-    const emailUrl = `mailto:?body=${encodeURIComponent(generatedResponse)}`;
-    
-    Linking.openURL(emailUrl)
-      .then(() => {
-        console.log('HomeScreen (iOS): Successfully opened email app');
-      })
-      .catch((err) => {
-        console.error('HomeScreen (iOS): Failed to open email app:', err);
-        Alert.alert('Помилка', 'Не вдалося відкрити додаток електронної пошти');
-      });
-  };
-
-  const closeResponseModal = () => {
-    console.log('HomeScreen (iOS): Closing response modal');
-    setShowResponseModal(false);
-    setGeneratedResponse('');
-  };
-
-  const handleImageError = (docId: string) => {
-    console.log('HomeScreen (iOS): Image failed to load for document:', docId);
-    setImageLoadErrors(prev => ({ ...prev, [docId]: true }));
-  };
-
-  const handleDetailImageError = () => {
-    console.log('HomeScreen (iOS): Detail image failed to load');
-    setDetailImageError(true);
   };
 
   const fetchScans = async () => {
@@ -729,7 +546,7 @@ export default function HomeScreen() {
   };
 
   const scanDocument = async () => {
-    console.log('HomeScreen (iOS): User tapped "Сфотографувати лист"');
+    console.log('HomeScreen (iOS): User tapped scan button');
     console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
     
     if (scanCount >= FREE_SCAN_LIMIT) {
@@ -758,7 +575,7 @@ export default function HomeScreen() {
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen (iOS): User tapped "Вибрати з галереї"');
+    console.log('HomeScreen (iOS): User tapped gallery button');
     console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
     
     if (scanCount >= FREE_SCAN_LIMIT) {
@@ -852,34 +669,15 @@ export default function HomeScreen() {
     router.push('/settings');
   };
 
-  const emptyStateText = translate('home', 'emptyState', selectedLanguage);
-  const emptyStateSubtext = translate('home', 'emptyStateAction', selectedLanguage);
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
-  const scanButtonText = translate('home', 'scanLetter', selectedLanguage);
-  const galleryButtonText = translate('home', 'chooseFromGallery', selectedLanguage);
-  const uploadingText = 'Завантаження...';
-  const documentText = 'Лист';
-  const imageDeletedText = 'Фото видалено для безпеки';
-  
-  const analysisTitleText = translate('letterDetail', 'analysisTitle', selectedLanguage);
-  const recommendedStepsText = translate('letterDetail', 'recommendedStepsTitle', selectedLanguage);
-  const analyzingLoadingText = translate('letterDetail', 'analyzingText', selectedLanguage);
-  const senderLabel = translate('letterDetail', 'sender', selectedLanguage);
-  const typeLabel = translate('letterDetail', 'type', selectedLanguage);
-  const descriptionLabel = translate('letterDetail', 'description', selectedLanguage);
-  const deadlineLabel = translate('letterDetail', 'deadline', selectedLanguage);
-  const amountLabel = translate('letterDetail', 'amount', selectedLanguage);
-  const urgencyLabel = translate('letterDetail', 'urgency', selectedLanguage);
-  const notSpecifiedText = translate('letterDetail', 'notSpecified', selectedLanguage);
-  const lowText = translate('letterDetail', 'low', selectedLanguage);
-  const mediumText = translate('letterDetail', 'medium', selectedLanguage);
-  const highText = translate('letterDetail', 'high', selectedLanguage);
+  const emptyStateTitle = translate('home', 'emptyStateTitle', selectedLanguage);
+  const emptyStateSubtitle = translate('home', 'emptyStateSubtitle', selectedLanguage);
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color="#3B82F6" />
         </View>
       </SafeAreaView>
     );
@@ -887,428 +685,88 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Top Bar */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <IconSymbol
-            ios_icon_name="doc.text.fill"
-            android_material_icon_name="description"
-            size={32}
-            color={colors.primary}
-          />
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-        </View>
+        <Text style={styles.headerTitle}>{headerTitle}</Text>
         <TouchableOpacity
-          style={styles.settingsButton}
           onPress={openSettings}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <IconSymbol
             ios_icon_name="gear"
             android_material_icon_name="settings"
-            size={28}
-            color={colors.text}
+            size={24}
+            color="#94A3B8"
           />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {uploading && (
-          <View style={styles.uploadingBanner}>
-            <ActivityIndicator size="small" color="#FFFFFF" />
-            <Text style={styles.uploadingText}>{uploadingText}</Text>
-          </View>
-        )}
-
-        {documents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <IconSymbol
-              ios_icon_name="doc.text"
-              android_material_icon_name="description"
-              size={80}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.emptyStateText}>{emptyStateText}</Text>
-            <Text style={styles.emptyStateSubtext}>{emptyStateSubtext}</Text>
-          </View>
-        ) : (
-          <View style={styles.documentsGrid}>
-            {documents.map((doc, index) => {
-              const formattedDate = formatDate(doc.created_at);
-              const documentName = `${documentText} ${documents.length - index}`;
-              const hasImageError = imageLoadErrors[doc.id];
-              
-              return (
-                <TouchableOpacity
-                  key={doc.id}
-                  style={styles.documentCard}
-                  onPress={() => viewDocument(doc)}
-                  activeOpacity={0.7}
-                >
-                  {hasImageError ? (
-                    <View style={styles.imagePlaceholder}>
-                      <Text style={styles.placeholderIcon}>📄</Text>
-                    </View>
-                  ) : (
-                    <Image 
-                      source={{ uri: doc.image_url }} 
-                      style={styles.documentThumbnail}
-                      onError={() => handleImageError(doc.id)}
-                    />
-                  )}
-                  <View style={styles.documentInfo}>
-                    <Text style={styles.documentName} numberOfLines={1}>
-                      {documentName}
-                    </Text>
-                    <Text style={styles.documentDate}>{formattedDate}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => confirmDeleteDocument(doc.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <IconSymbol
-                      ios_icon_name="trash"
-                      android_material_icon_name="delete"
-                      size={20}
-                      color={colors.error}
-                    />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={[styles.primaryButton, uploading && styles.disabledButton]} 
-          onPress={scanDocument} 
-          activeOpacity={0.8}
-          disabled={uploading}
-        >
+      {/* Scan List */}
+      {documents.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
           <IconSymbol
-            ios_icon_name="camera.fill"
+            ios_icon_name="camera"
             android_material_icon_name="camera"
-            size={24}
-            color="#FFFFFF"
+            size={80}
+            color="#94A3B8"
           />
-          <Text style={styles.primaryButtonText}>{scanButtonText}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.secondaryButton, uploading && styles.disabledButton]} 
-          onPress={importFromGallery} 
-          activeOpacity={0.8}
-          disabled={uploading}
-        >
-          <IconSymbol
-            ios_icon_name="photo"
-            android_material_icon_name="image"
-            size={24}
-            color={colors.primary}
-          />
-          <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Modal
-        visible={showPaywall}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setShowPaywall(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }} edges={['top', 'bottom']}>
-          <View style={{ flex: 1, padding: 20 }}>
-            <TouchableOpacity onPress={() => setShowPaywall(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-              <Text style={{ fontSize: 24, color: '#64748B' }}>✕</Text>
-            </TouchableOpacity>
+          <Text style={styles.emptyStateTitle}>{emptyStateTitle}</Text>
+          <Text style={styles.emptyStateSubtitle}>{emptyStateSubtitle}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={documents}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const analysis = parseAnalysis(item.analysis);
+            const senderText = analysis?.sender || 'Unknown';
+            const titleText = analysis?.summary_ua || 'No title';
+            const dateText = formatDate(item.created_at);
+            const deadlineText = analysis?.deadline;
             
-            <View style={{ alignItems: 'center', marginTop: 20 }}>
-              <Text style={{ fontSize: 48 }}>📄</Text>
-              <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1E293B', marginTop: 16, textAlign: 'center' }}>Безлімітний доступ</Text>
-              <Text style={{ fontSize: 16, color: '#64748B', marginTop: 8, textAlign: 'center' }}>Ви використали {scanCount} з {FREE_SCAN_LIMIT} безкоштовних сканувань</Text>
-            </View>
-
-            <View style={{ marginTop: 32, gap: 12 }}>
-              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#3B82F6', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щомісячно</Text>
-                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>Скасувати будь-коли</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€4.99</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#1D4ED8', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щорічно</Text>
-                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>2 місяці безкоштовно</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€34.99</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => Alert.alert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#059669', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Назавжди</Text>
-                  <Text style={{ fontSize: 14, color: '#A7F3D0' }}>Одноразова оплата</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€29.99</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ marginTop: 24, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center' }}>✓ Безлімітні сканування  ✓ Усі мови перекладу  ✓ Генерація відповідей</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal
-        visible={!!selectedDocument}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={closeDocumentView}
-      >
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={closeDocumentView}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.backButtonText}>← Назад</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Деталі листа</Text>
-            <View style={{ width: 80 }} />
-          </View>
-
-          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalContent}>
-            {selectedDocument && (
-              <>
-                {detailImageError ? (
-                  <View style={styles.detailImagePlaceholder}>
-                    <Text style={styles.detailPlaceholderIcon}>📄</Text>
-                    <Text style={styles.detailPlaceholderText}>{imageDeletedText}</Text>
-                  </View>
-                ) : (
-                  <Image
-                    source={{ uri: selectedDocument.image_url }}
-                    style={styles.detailImage}
-                    resizeMode="contain"
-                    onError={handleDetailImageError}
-                  />
-                )}
-
-                <View style={styles.detailInfo}>
-                  <Text style={styles.detailDate}>
-                    {formatDate(selectedDocument.created_at)}
-                  </Text>
-                </View>
-
-                {selectedDocument.analysis ? (
-                  <>
-                    {(() => {
-                      const analysis = parseAnalysis(selectedDocument.analysis);
-                      if (!analysis) {
-                        return (
-                          <View style={styles.analysisSection}>
-                            <Text style={styles.analysisSectionTitle}>Аналіз</Text>
-                            <Text style={styles.analysisError}>
-                              Не вдалося розпізнати аналіз
-                            </Text>
-                          </View>
-                        );
-                      }
-
-                      const senderText = analysis.sender || notSpecifiedText;
-                      const typeText = analysis.type || notSpecifiedText;
-                      const summaryText = analysis.summary_ua || notSpecifiedText;
-                      const deadlineText = analysis.deadline || notSpecifiedText;
-                      const amountText = analysis.amount ? `€${analysis.amount}` : notSpecifiedText;
-                      const urgencyText = analysis.urgency === 'high' ? `🔴 ${highText}` : analysis.urgency === 'medium' ? `🟡 ${mediumText}` : `🟢 ${lowText}`;
-
-                      return (
-                        <>
-                          <View style={styles.analysisSection}>
-                            <Text style={styles.analysisSectionTitle}>📋 {analysisTitleText}</Text>
-                            
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{senderLabel}</Text>
-                              <Text style={styles.analysisValue}>{senderText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{typeLabel}</Text>
-                              <Text style={styles.analysisValue}>{typeText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{descriptionLabel}</Text>
-                              <Text style={styles.analysisValue}>{summaryText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{deadlineLabel}</Text>
-                              <Text style={styles.analysisValue}>{deadlineText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{amountLabel}</Text>
-                              <Text style={styles.analysisValue}>{amountText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{urgencyLabel}</Text>
-                              <Text style={styles.analysisValue}>{urgencyText}</Text>
-                            </View>
-
-                            {analysis.deadline && analysis.deadline !== notSpecifiedText && (
-                              <TouchableOpacity
-                                style={styles.calendarButton}
-                                onPress={() => openGoogleCalendar(senderText, analysis.deadline!, summaryText)}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  ios_icon_name="calendar"
-                                  android_material_icon_name="calendar-today"
-                                  size={20}
-                                  color="#FFFFFF"
-                                />
-                                <Text style={styles.calendarButtonText}>Додати в календар</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-
-                          {analysis.templates && analysis.templates.length > 0 && (
-                            <View style={styles.templatesSection}>
-                              <Text style={styles.templatesSectionTitle}>✍️ Шаблони відповідей</Text>
-                              {analysis.templates.map((template, idx) => {
-                                const templateLabel = TEMPLATE_LABELS[template] || template;
-                                return (
-                                  <TouchableOpacity
-                                    key={idx}
-                                    style={styles.templateButton}
-                                    onPress={() => handleTemplatePress(template, analysis)}
-                                    activeOpacity={0.7}
-                                    disabled={generatingResponse}
-                                  >
-                                    <Text style={styles.templateButtonText}>{templateLabel}</Text>
-                                  </TouchableOpacity>
-                                );
-                              })}
-                              {generatingResponse && (
-                                <View style={styles.generatingContainer}>
-                                  <ActivityIndicator size="small" color={colors.primary} />
-                                  <Text style={styles.generatingText}>Генерація відповіді...</Text>
-                                </View>
-                              )}
-                            </View>
-                          )}
-
-                          {analysis.steps && analysis.steps.length > 0 && (
-                            <View style={styles.stepsSection}>
-                              <Text style={styles.stepsSectionTitle}>📝 {recommendedStepsText}</Text>
-                              {analysis.steps.map((step, idx) => {
-                                const stepNumber = `${idx + 1}.`;
-                                return (
-                                  <View key={idx} style={styles.stepRow}>
-                                    <Text style={styles.stepNumber}>{stepNumber}</Text>
-                                    <Text style={styles.stepText}>{step}</Text>
-                                  </View>
-                                );
-                              })}
-                            </View>
-                          )}
-
-                          <View style={styles.sampleResponseSection}>
-                            <TouchableOpacity
-                              style={[styles.sampleResponseButton, generatingResponse && styles.disabledButton]}
-                              onPress={() => generateSampleResponse(analysis)}
-                              activeOpacity={0.7}
-                              disabled={generatingResponse}
-                            >
-                              <Text style={styles.sampleResponseButtonText}>📝 Шаблон відповіді</Text>
-                            </TouchableOpacity>
-                            {generatingResponse && (
-                              <View style={styles.generatingContainer}>
-                                <ActivityIndicator size="small" color={colors.primary} />
-                                <Text style={styles.generatingText}>Генерація відповіді...</Text>
-                              </View>
-                            )}
-                          </View>
-                        </>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <View style={styles.analysisSection}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.analyzingText}>{analyzingLoadingText}</Text>
-                  </View>
-                )}
-              </>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal
-        visible={showResponseModal}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={closeResponseModal}
-      >
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={closeResponseModal}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.backButtonText}>← Назад</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Згенерована відповідь</Text>
-            <View style={{ width: 80 }} />
-          </View>
-
-          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalContent}>
-            <View style={styles.responseContainer}>
-              <Text style={styles.responseText}>{generatedResponse}</Text>
-            </View>
-
-            <View style={styles.responseActions}>
+            return (
               <TouchableOpacity
-                style={styles.responseActionButton}
-                onPress={copyToClipboard}
+                style={styles.scanCard}
+                onPress={() => viewDocument(item)}
                 activeOpacity={0.7}
               >
-                <IconSymbol
-                  ios_icon_name="doc.on.doc"
-                  android_material_icon_name="content-copy"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text style={styles.responseActionText}>Копіювати</Text>
+                <View style={styles.senderBadge}>
+                  <View style={styles.greenDot} />
+                  <Text style={styles.senderBadgeText}>{senderText}</Text>
+                </View>
+                <Text style={styles.letterTitle} numberOfLines={2}>
+                  {titleText}
+                </Text>
+                <Text style={styles.dateText}>{dateText}</Text>
+                {deadlineText && (
+                  <View style={styles.deadlineBadge}>
+                    <Text style={styles.deadlineBadgeText}>
+                      Deadline: {deadlineText}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={styles.scanListContent}
+        />
+      )}
 
-              <TouchableOpacity
-                style={styles.responseActionButton}
-                onPress={sendEmail}
-                activeOpacity={0.7}
-              >
-                <IconSymbol
-                  ios_icon_name="envelope"
-                  android_material_icon_name="email"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text style={styles.responseActionText}>Надіслати email</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      {/* Floating Scan Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={scanDocument}
+        activeOpacity={0.8}
+      >
+        <IconSymbol
+          ios_icon_name="camera.fill"
+          android_material_icon_name="camera"
+          size={28}
+          color="#FFFFFF"
+        />
+      </TouchableOpacity>
 
+      {/* Delete Modal */}
       <Modal
         visible={showDeleteModal}
         animationType="fade"
@@ -1353,31 +811,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#F8FAFC',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  uploadingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  uploadingText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  disabledButton: {
-    opacity: 0.5,
   },
   header: {
     flexDirection: 'row',
@@ -1385,399 +824,110 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    borderBottomColor: 'rgba(15,23,42,0.06)',
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginLeft: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
-  settingsButton: {
-    padding: 8,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  emptyState: {
+  emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  emptyStateText: {
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#475569',
     marginTop: 20,
     textAlign: 'center',
   },
-  emptyStateSubtext: {
+  emptyStateSubtitle: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#94A3B8',
     marginTop: 8,
     textAlign: 'center',
-    paddingHorizontal: 40,
   },
-  documentsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  scanListContent: {
+    padding: 20,
   },
-  documentCard: {
-    width: '48%',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
+  scanCard: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  documentThumbnail: {
-    width: '100%',
-    height: 150,
-    backgroundColor: colors.background,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: 150,
-    backgroundColor: '#E5E5E5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderIcon: {
-    fontSize: 48,
-  },
-  documentInfo: {
-    padding: 12,
-  },
-  documentName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  documentDate: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 20,
-    padding: 8,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  actionButtons: {
-    padding: 20,
-    backgroundColor: colors.backgroundAlt,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  primaryButton: {
+  senderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundAlt,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-    marginLeft: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: colors.backgroundAlt,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalContent: {
-    padding: 20,
-  },
-  detailImage: {
-    width: '100%',
-    height: 400,
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  detailImagePlaceholder: {
-    width: '100%',
-    height: 400,
-    backgroundColor: '#E5E5E5',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  detailPlaceholderIcon: {
-    fontSize: 80,
-    marginBottom: 12,
-  },
-  detailPlaceholderText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  detailInfo: {
-    marginBottom: 20,
-  },
-  detailDate: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  analysisSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  analysisSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  analysisRow: {
-    marginBottom: 12,
-  },
-  analysisLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  analysisValue: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  analysisError: {
-    fontSize: 14,
-    color: colors.error,
-    textAlign: 'center',
-  },
-  analyzingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  analyzingSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  calendarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  calendarButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  templatesSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  templatesSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  templateButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
     marginBottom: 8,
   },
-  templateButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    marginRight: 6,
   },
-  generatingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  senderBadgeText: {
+    fontSize: 12,
+    color: '#475569',
+  },
+  letterTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  deadlineBadge: {
+    backgroundColor: 'rgba(220,38,38,0.06)',
+    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  deadlineBadgeText: {
+    fontSize: 11,
+    color: '#DC2626',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#3B82F6',
     justifyContent: 'center',
-    marginTop: 12,
-  },
-  generatingText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginLeft: 8,
-  },
-  stepsSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  stepsSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  stepNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-    marginRight: 8,
-    minWidth: 24,
-  },
-  stepText: {
-    fontSize: 14,
-    color: colors.text,
-    flex: 1,
-  },
-  sampleResponseSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sampleResponseButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 10,
     alignItems: 'center',
-  },
-  sampleResponseButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  responseContainer: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  responseText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  responseActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  responseActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  responseActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-    marginLeft: 8,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 8,
   },
   deleteModalOverlay: {
     flex: 1,
@@ -1787,25 +937,30 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   deleteModalContent: {
-    backgroundColor: colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
   },
   deleteModalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: '#0F172A',
     marginBottom: 12,
     textAlign: 'center',
   },
   deleteModalMessage: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#475569',
     marginBottom: 24,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22.4,
   },
   deleteModalButtons: {
     flexDirection: 'row',
@@ -1814,25 +969,30 @@ const styles = StyleSheet.create({
   },
   deleteModalCancelButton: {
     flex: 1,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: 'rgba(15,23,42,0.06)',
   },
   deleteModalCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#0F172A',
     textAlign: 'center',
   },
   deleteModalConfirmButton: {
     flex: 1,
-    backgroundColor: colors.error,
+    backgroundColor: '#DC2626',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   deleteModalConfirmText: {
     fontSize: 14,

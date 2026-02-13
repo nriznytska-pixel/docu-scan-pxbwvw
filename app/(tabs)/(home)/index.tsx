@@ -5,7 +5,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Image,
   Platform,
   Modal,
@@ -782,7 +782,7 @@ export default function HomeScreen() {
   };
 
   const scanDocument = async () => {
-    console.log('HomeScreen: User tapped "Сфотографувати лист"');
+    console.log('HomeScreen: User tapped scan button');
     console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
     
     if (scanCount >= FREE_SCAN_LIMIT) {
@@ -811,7 +811,7 @@ export default function HomeScreen() {
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen: User tapped "Вибрати з галереї"');
+    console.log('HomeScreen: User tapped gallery button');
     console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
     
     if (scanCount >= FREE_SCAN_LIMIT) {
@@ -934,31 +934,8 @@ export default function HomeScreen() {
   };
 
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
-  const scanButtonText = translate('home', 'scanLetter', selectedLanguage);
-  const galleryButtonText = translate('home', 'chooseFromGallery', selectedLanguage);
-  const emptyStateText = translate('home', 'emptyState', selectedLanguage);
-  const emptyStateSubtext = translate('home', 'emptyStateAction', selectedLanguage);
-  const logoutButtonText = translate('home', 'logout', selectedLanguage);
-  const uploadingText = 'Завантаження...';
-  const documentText = 'Лист';
-  const imageDeletedText = 'Фото видалено для безпеки';
-  const backButtonText = translate('letterDetail', 'back', selectedLanguage);
-  
-  const analysisTitleText = translate('letterDetail', 'analysisTitle', selectedLanguage);
-  const senderLabel = translate('letterDetail', 'sender', selectedLanguage);
-  const typeLabel = translate('letterDetail', 'type', selectedLanguage);
-  const descriptionLabel = translate('letterDetail', 'description', selectedLanguage);
-  const deadlineLabel = translate('letterDetail', 'deadline', selectedLanguage);
-  const amountLabel = translate('letterDetail', 'amount', selectedLanguage);
-  const urgencyLabel = translate('letterDetail', 'urgency', selectedLanguage);
-  const notSpecifiedText = translate('letterDetail', 'notSpecified', selectedLanguage);
-  const lowText = translate('letterDetail', 'low', selectedLanguage);
-  const mediumText = translate('letterDetail', 'medium', selectedLanguage);
-  const highText = translate('letterDetail', 'high', selectedLanguage);
-  const sampleResponseButtonText = translate('letterDetail', 'sampleResponseButton', selectedLanguage);
-  const generatingResponseText = translate('letterDetail', 'generatingResponse', selectedLanguage);
-  const responseTitleText = translate('letterDetail', 'responseTitle', selectedLanguage);
-  const copyButtonText = translate('letterDetail', 'copyButton', selectedLanguage);
+  const emptyStateTitle = translate('home', 'emptyStateTitle', selectedLanguage);
+  const emptyStateSubtitle = translate('home', 'emptyStateSubtitle', selectedLanguage);
 
   if (loading) {
     return (
@@ -972,470 +949,86 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Top Bar */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <IconSymbol
-            ios_icon_name="doc.text.fill"
-            android_material_icon_name="description"
-            size={32}
-            color={colors.accentBlue}
-          />
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {uploading && (
-          <View style={styles.uploadingBanner}>
-            <ActivityIndicator size="small" color="#FFFFFF" />
-            <Text style={styles.uploadingText}>{uploadingText}</Text>
-          </View>
-        )}
-
-        {documents.length === 0 ? (
-          <View style={styles.emptyState}>
-            <IconSymbol
-              ios_icon_name="doc.text"
-              android_material_icon_name="description"
-              size={80}
-              color={colors.textMuted}
-            />
-            <Text style={styles.emptyStateText}>{emptyStateText}</Text>
-            <Text style={styles.emptyStateSubtext}>{emptyStateSubtext}</Text>
-          </View>
-        ) : (
-          <View style={styles.documentsGrid}>
-            {documents.map((doc, index) => {
-              const formattedDate = formatDate(doc.created_at);
-              const documentName = `${documentText} ${documents.length - index}`;
-              const hasImageError = imageLoadErrors[doc.id];
-              
-              return (
-                <TouchableOpacity
-                  key={doc.id}
-                  style={styles.documentCard}
-                  onPress={() => viewDocument(doc)}
-                  activeOpacity={0.7}
-                >
-                  {hasImageError ? (
-                    <View style={styles.imagePlaceholder}>
-                      <Text style={styles.placeholderIcon}>📄</Text>
-                    </View>
-                  ) : (
-                    <Image 
-                      source={{ uri: doc.image_url }} 
-                      style={styles.documentThumbnail}
-                      onError={() => handleImageError(doc.id)}
-                    />
-                  )}
-                  <View style={styles.documentInfo}>
-                    <Text style={styles.documentName} numberOfLines={1}>
-                      {documentName}
-                    </Text>
-                    <Text style={styles.documentDate}>{formattedDate}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => confirmDeleteDocument(doc.id)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <IconSymbol
-                      ios_icon_name="trash"
-                      android_material_icon_name="delete"
-                      size={20}
-                      color={colors.red}
-                    />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={[styles.primaryButton, uploading && styles.disabledButton]} 
-          onPress={scanDocument} 
-          activeOpacity={0.8}
-          disabled={uploading}
+        <Text style={styles.headerTitle}>{headerTitle}</Text>
+        <TouchableOpacity
+          onPress={handleLogout}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <IconSymbol
-            ios_icon_name="camera.fill"
+            ios_icon_name="gear"
+            android_material_icon_name="settings"
+            size={24}
+            color={colors.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Scan List */}
+      {documents.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <IconSymbol
+            ios_icon_name="camera"
             android_material_icon_name="camera"
-            size={24}
-            color="#FFFFFF"
+            size={80}
+            color={colors.textMuted}
           />
-          <Text style={styles.primaryButtonText}>{scanButtonText}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.secondaryButton, uploading && styles.disabledButton]} 
-          onPress={importFromGallery} 
-          activeOpacity={0.8}
-          disabled={uploading}
-        >
-          <IconSymbol
-            ios_icon_name="photo"
-            android_material_icon_name="image"
-            size={24}
-            color={colors.accentBlue}
-          />
-          <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={handleLogout} 
-          activeOpacity={0.8}
-        >
-          <IconSymbol
-            ios_icon_name="rectangle.portrait.and.arrow.right"
-            android_material_icon_name="logout"
-            size={20}
-            color="#FFFFFF"
-          />
-          <Text style={styles.logoutButtonText}>{logoutButtonText}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Modal
-        visible={showPaywall}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setShowPaywall(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundPrimary }} edges={['top', 'bottom']}>
-          <View style={{ flex: 1, padding: 20 }}>
-            <TouchableOpacity onPress={() => setShowPaywall(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-              <Text style={{ fontSize: 24, color: colors.textMuted }}>✕</Text>
-            </TouchableOpacity>
+          <Text style={styles.emptyStateTitle}>{emptyStateTitle}</Text>
+          <Text style={styles.emptyStateSubtitle}>{emptyStateSubtitle}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={documents}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const analysis = parseAnalysis(item.analysis);
+            const senderText = analysis?.sender || 'Unknown';
+            const titleText = analysis?.summary_ua || 'No title';
+            const dateText = formatDate(item.created_at);
+            const deadlineText = analysis?.deadline;
             
-            <View style={{ alignItems: 'center', marginTop: 20 }}>
-              <Text style={{ fontSize: 48 }}>📄</Text>
-              <Text style={{ fontSize: 28, fontWeight: '700', color: colors.textPrimary, marginTop: 16, textAlign: 'center' }}>Безлімітний доступ</Text>
-              <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>Ви використали {scanCount} з {FREE_SCAN_LIMIT} безкоштовних сканувань</Text>
-            </View>
-
-            <View style={{ marginTop: 32, gap: 12 }}>
-              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: colors.accentBlue, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: colors.accentBlue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 4 }}>
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щомісячно</Text>
-                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>Скасувати будь-коли</Text>
+            return (
+              <TouchableOpacity
+                style={styles.scanCard}
+                onPress={() => viewDocument(item)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.senderBadge}>
+                  <View style={styles.greenDot} />
+                  <Text style={styles.senderBadgeText}>{senderText}</Text>
                 </View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: 'white' }}>€4.99</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: colors.accentBlueDark, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: colors.accentBlue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 4 }}>
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щорічно</Text>
-                  <Text style={{ fontSize: 14, color: '#BFDBFE' }}>2 місяці безкоштовно</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: 'white' }}>€34.99</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: colors.green, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: colors.green, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 4 }}>
-                <View>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Назавжди</Text>
-                  <Text style={{ fontSize: 14, color: '#A7F3D0' }}>Одноразова оплата</Text>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: 'white' }}>€29.99</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ marginTop: 24, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>✓ Безлімітні сканування  ✓ Усі мови перекладу  ✓ Генерація відповідей</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal
-        visible={!!selectedDocument}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={closeDocumentView}
-      >
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={closeDocumentView}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.backButtonText}>{backButtonText}</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Деталі листа</Text>
-            <View style={{ width: 80 }} />
-          </View>
-
-          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalContent}>
-            {selectedDocument && (
-              <>
-                {detailImageError ? (
-                  <View style={styles.detailImagePlaceholder}>
-                    <Text style={styles.detailPlaceholderIcon}>📄</Text>
-                    <Text style={styles.detailPlaceholderText}>{imageDeletedText}</Text>
-                  </View>
-                ) : (
-                  <Image
-                    source={{ uri: selectedDocument.image_url }}
-                    style={styles.detailImage}
-                    resizeMode="contain"
-                    onError={handleDetailImageError}
-                  />
-                )}
-
-                <View style={styles.detailInfo}>
-                  <Text style={styles.detailDate}>
-                    {formatDate(selectedDocument.created_at)}
-                  </Text>
-                </View>
-
-                {selectedDocument.analysis ? (
-                  <>
-                    {(() => {
-                      const analysis = parseAnalysis(selectedDocument.analysis);
-                      if (!analysis) {
-                        return (
-                          <View style={styles.analysisSection}>
-                            <Text style={styles.analysisSectionTitle}>Аналіз</Text>
-                            <Text style={styles.analysisError}>
-                              Не вдалося розпізнати аналіз
-                            </Text>
-                          </View>
-                        );
-                      }
-
-                      const senderText = analysis.sender || notSpecifiedText;
-                      const typeText = analysis.type || notSpecifiedText;
-                      const summaryText = analysis.summary_ua || notSpecifiedText;
-                      const deadlineText = analysis.deadline || notSpecifiedText;
-                      const amountText = analysis.amount ? `€${analysis.amount}` : notSpecifiedText;
-                      const urgencyText = analysis.urgency === 'high' ? `🔴 ${highText}` : analysis.urgency === 'medium' ? `🟡 ${mediumText}` : `🟢 ${lowText}`;
-
-                      return (
-                        <>
-                          <View style={styles.analysisSection}>
-                            <Text style={styles.analysisSectionTitle}>📋 {analysisTitleText}</Text>
-                            
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{senderLabel}</Text>
-                              <Text style={styles.analysisValue}>{senderText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{typeLabel}</Text>
-                              <Text style={styles.analysisValue}>{typeText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{descriptionLabel}</Text>
-                              <Text style={styles.analysisValue}>{summaryText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{deadlineLabel}</Text>
-                              <Text style={styles.analysisValue}>{deadlineText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{amountLabel}</Text>
-                              <Text style={styles.analysisValue}>{amountText}</Text>
-                            </View>
-
-                            <View style={styles.analysisRow}>
-                              <Text style={styles.analysisLabel}>{urgencyLabel}</Text>
-                              <Text style={styles.analysisValue}>{urgencyText}</Text>
-                            </View>
-
-                            {analysis.deadline && analysis.deadline !== notSpecifiedText && (
-                              <TouchableOpacity
-                                style={styles.calendarButton}
-                                onPress={() => openGoogleCalendar(senderText, analysis.deadline!, summaryText)}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  ios_icon_name="calendar"
-                                  android_material_icon_name="calendar-today"
-                                  size={20}
-                                  color="#FFFFFF"
-                                />
-                                <Text style={styles.calendarButtonText}>Додати в календар</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-
-                          {analysis.templates && analysis.templates.length > 0 && (
-                            <View style={styles.templatesSection}>
-                              <Text style={styles.templatesSectionTitle}>✍️ Шаблони відповідей</Text>
-                              {analysis.templates.map((template, idx) => {
-                                const templateLabel = TEMPLATE_LABELS[template] || template;
-                                return (
-                                  <TouchableOpacity
-                                    key={idx}
-                                    style={styles.templateButton}
-                                    onPress={() => handleTemplatePress(template, analysis)}
-                                    activeOpacity={0.7}
-                                    disabled={generatingResponse}
-                                  >
-                                    <Text style={styles.templateButtonText}>{templateLabel}</Text>
-                                  </TouchableOpacity>
-                                );
-                              })}
-                              {generatingResponse && (
-                                <View style={styles.generatingContainer}>
-                                  <ActivityIndicator size="small" color={colors.accentBlue} />
-                                  <Text style={styles.generatingText}>Генерація відповіді...</Text>
-                                </View>
-                              )}
-                            </View>
-                          )}
-
-                          {analysis.steps && analysis.steps.length > 0 && (
-                            <View style={styles.stepsSection}>
-                              <Text style={styles.stepsSectionTitle}>📝 Рекомендовані кроки</Text>
-                              {analysis.steps.map((step, idx) => {
-                                const stepNumber = `${idx + 1}.`;
-                                return (
-                                  <View key={idx} style={styles.stepRow}>
-                                    <Text style={styles.stepNumber}>{stepNumber}</Text>
-                                    <Text style={styles.stepText}>{step}</Text>
-                                  </View>
-                                );
-                              })}
-                            </View>
-                          )}
-
-                          <View style={styles.sampleResponseSection}>
-                            <TouchableOpacity
-                              style={[styles.sampleResponseButton, generatingResponse && styles.disabledButton]}
-                              onPress={() => generateSampleResponse(analysis)}
-                              activeOpacity={0.7}
-                              disabled={generatingResponse}
-                            >
-                              <Text style={styles.sampleResponseButtonText}>{sampleResponseButtonText}</Text>
-                            </TouchableOpacity>
-                            {generatingResponse && (
-                              <View style={styles.generatingContainer}>
-                                <ActivityIndicator size="small" color={colors.accentBlue} />
-                                <Text style={styles.generatingText}>{generatingResponseText}</Text>
-                              </View>
-                            )}
-                          </View>
-                        </>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <View style={styles.analysisSection}>
-                    <ActivityIndicator size="large" color={colors.accentBlue} />
-                    <Text style={styles.analyzingText}>Аналіз листа...</Text>
-                    <Text style={styles.analyzingSubtext}>
-                      Це може зайняти кілька секунд
+                <Text style={styles.letterTitle} numberOfLines={2}>
+                  {titleText}
+                </Text>
+                <Text style={styles.dateText}>{dateText}</Text>
+                {deadlineText && (
+                  <View style={styles.deadlineBadge}>
+                    <Text style={styles.deadlineBadgeText}>
+                      Deadline: {deadlineText}
                     </Text>
                   </View>
                 )}
-              </>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+              </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={styles.scanListContent}
+        />
+      )}
 
-      <Modal
-        visible={showResponseModal}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={closeResponseModal}
+      {/* Floating Scan Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={scanDocument}
+        activeOpacity={0.8}
       >
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={closeResponseModal}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={styles.backButtonText}>{backButtonText}</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>{responseTitleText}</Text>
-            <View style={{ width: 80 }} />
-          </View>
-
-          <ScrollView style={styles.modalScrollView} contentContainerStyle={styles.modalContent}>
-            <View style={styles.responseContainer}>
-              <Text style={styles.responseText}>{generatedResponse}</Text>
-            </View>
-
-            <View style={styles.responseActions}>
-              <TouchableOpacity
-                style={styles.responseActionButton}
-                onPress={copyToClipboard}
-                activeOpacity={0.7}
-              >
-                <IconSymbol
-                  ios_icon_name="doc.on.doc"
-                  android_material_icon_name="content-copy"
-                  size={20}
-                  color={colors.accentBlue}
-                />
-                <Text style={styles.responseActionText}>{copyButtonText}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.responseActionButton}
-                onPress={sendEmail}
-                activeOpacity={0.7}
-              >
-                <IconSymbol
-                  ios_icon_name="envelope"
-                  android_material_icon_name="email"
-                  size={20}
-                  color={colors.accentBlue}
-                />
-                <Text style={styles.responseActionText}>Надіслати email</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal
-        visible={showDeleteModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={cancelDelete}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>
-              {translate('deleteDialog', 'title', selectedLanguage)}
-            </Text>
-            <Text style={styles.deleteModalMessage}>
-              {translate('deleteDialog', 'message', selectedLanguage)}
-            </Text>
-            <View style={styles.deleteModalButtons}>
-              <TouchableOpacity
-                style={styles.deleteModalCancelButton}
-                onPress={cancelDelete}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.deleteModalCancelText}>
-                  {translate('deleteDialog', 'cancel', selectedLanguage)}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteModalConfirmButton}
-                onPress={deleteDocument}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.deleteModalConfirmText}>
-                  {translate('deleteDialog', 'delete', selectedLanguage)}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        <IconSymbol
+          ios_icon_name="camera.fill"
+          android_material_icon_name="camera"
+          size={28}
+          color="#FFFFFF"
+        />
+      </TouchableOpacity>
 
       {/* Custom Alert Modal */}
       <Modal
@@ -1487,7 +1080,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+    backgroundColor: '#F8FAFC',
     paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   loadingContainer: {
@@ -1495,494 +1088,116 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  uploadingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accentBlue,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  uploadingText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: colors.backgroundWhite,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    borderBottomColor: 'rgba(15,23,42,0.06)',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.textPrimary,
-    marginLeft: 12,
+    color: '#0F172A',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  emptyState: {
+  emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  emptyStateText: {
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: '#475569',
     marginTop: 20,
     textAlign: 'center',
   },
-  emptyStateSubtext: {
+  emptyStateSubtitle: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#94A3B8',
     marginTop: 8,
     textAlign: 'center',
-    paddingHorizontal: 40,
-    lineHeight: 22.4,
   },
-  documentsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  scanListContent: {
+    padding: 20,
   },
-  documentCard: {
-    width: '48%',
-    backgroundColor: colors.backgroundWhite,
-    borderRadius: 16,
-    marginBottom: 16,
-    overflow: 'hidden',
+  scanCard: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
     elevation: 1,
   },
-  documentThumbnail: {
-    width: '100%',
-    height: 150,
-    backgroundColor: colors.surfaceSecondary,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: 150,
-    backgroundColor: colors.surfaceSecondary,
-    justifyContent: 'center',
+  senderBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  placeholderIcon: {
-    fontSize: 48,
-  },
-  documentInfo: {
-    padding: 12,
-  },
-  documentName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  documentDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: colors.backgroundWhite,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
     borderRadius: 20,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
-  actionButtons: {
-    padding: 20,
-    backgroundColor: colors.backgroundWhite,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    marginRight: 6,
   },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accentBlue,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 4,
+  senderBadgeText: {
+    fontSize: 12,
+    color: '#475569',
   },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundWhite,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.accentBlue,
-    marginBottom: 12,
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.accentBlue,
-    marginLeft: 8,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.red,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    shadowColor: colors.red,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  logoutButtonText: {
+  letterTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
+    color: '#0F172A',
+    marginBottom: 6,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: colors.backgroundPrimary,
+  dateText: {
+    fontSize: 12,
+    color: '#94A3B8',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: colors.backgroundWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.accentBlue,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalContent: {
-    padding: 20,
-  },
-  detailImage: {
-    width: '100%',
-    height: 400,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 16,
-    marginBottom: 20,
-  },
-  detailImagePlaceholder: {
-    width: '100%',
-    height: 400,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  detailPlaceholderIcon: {
-    fontSize: 80,
-    marginBottom: 12,
-  },
-  detailPlaceholderText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  detailInfo: {
-    marginBottom: 20,
-  },
-  detailDate: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  analysisSection: {
-    backgroundColor: colors.backgroundWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  analysisSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 16,
-  },
-  analysisRow: {
-    marginBottom: 12,
-  },
-  analysisLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginBottom: 4,
-  },
-  analysisValue: {
-    fontSize: 16,
-    color: colors.textPrimary,
-    lineHeight: 25.6,
-  },
-  analysisError: {
-    fontSize: 14,
-    color: colors.red,
-    textAlign: 'center',
-  },
-  analyzingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  analyzingSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
+  deadlineBadge: {
+    backgroundColor: 'rgba(220,38,38,0.06)',
+    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    alignSelf: 'flex-start',
     marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 22.4,
   },
-  calendarButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  deadlineBadgeText: {
+    fontSize: 11,
+    color: '#DC2626',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#3B82F6',
     justifyContent: 'center',
-    backgroundColor: colors.accentBlue,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginTop: 16,
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  calendarButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  templatesSection: {
-    backgroundColor: colors.backgroundWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  templatesSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  templateButton: {
-    backgroundColor: colors.accentBlue,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 8,
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  templateButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  generatingContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  generatingText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginLeft: 8,
-  },
-  stepsSection: {
-    backgroundColor: colors.backgroundWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  stepsSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  stepNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.accentBlue,
-    marginRight: 8,
-    minWidth: 24,
-  },
-  stepText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    flex: 1,
-    lineHeight: 22.4,
-  },
-  sampleResponseSection: {
-    backgroundColor: colors.backgroundWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  sampleResponseButton: {
-    backgroundColor: colors.accentBlue,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  sampleResponseButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  responseContainer: {
-    backgroundColor: colors.backgroundWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  responseText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 22.4,
-  },
-  responseActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  responseActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundWhite,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.accentBlue,
-  },
-  responseActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.accentBlue,
-    marginLeft: 8,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 8,
   },
   deleteModalOverlay: {
     flex: 1,
@@ -1992,7 +1207,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   deleteModalContent: {
-    backgroundColor: colors.backgroundWhite,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     width: '100%',
@@ -2006,13 +1221,13 @@ const styles = StyleSheet.create({
   deleteModalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#0F172A',
     marginBottom: 12,
     textAlign: 'center',
   },
   deleteModalMessage: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: '#475569',
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22.4,
@@ -2024,26 +1239,26 @@ const styles = StyleSheet.create({
   },
   deleteModalCancelButton: {
     flex: 1,
-    backgroundColor: colors.backgroundWhite,
+    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: 'rgba(15,23,42,0.06)',
   },
   deleteModalCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: '#0F172A',
     textAlign: 'center',
   },
   deleteModalConfirmButton: {
     flex: 1,
-    backgroundColor: colors.red,
+    backgroundColor: '#DC2626',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    shadowColor: colors.red,
+    shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
