@@ -14,6 +14,7 @@ import {
   Linking,
   Clipboard,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,6 +33,14 @@ interface AnalysisData {
   content: [{ text: string }];
 }
 
+interface ActionStep {
+  number: number;
+  title: string;
+  description: string;
+  link?: string;
+  deadline?: string;
+}
+
 interface ParsedAnalysisContent {
   sender?: string;
   type?: string;
@@ -40,8 +49,9 @@ interface ParsedAnalysisContent {
   amount?: number;
   urgency?: 'low' | 'medium' | 'high';
   templates?: string[];
-  steps?: string[];
+  steps?: ActionStep[];
   bsn_detected?: boolean;
+  response_template?: string;
 }
 
 interface ScannedDocument {
@@ -86,6 +96,7 @@ export default function HomeScreen() {
   const [scanCount, setScanCount] = useState(0);
   const [showPaywall, setShowPaywall] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'action' | 'response'>('summary');
+  const [editableResponse, setEditableResponse] = useState<string>('');
   const FREE_SCAN_LIMIT = 3;
 
   useEffect(() => {
@@ -682,9 +693,43 @@ export default function HomeScreen() {
     return diffDays;
   };
 
+  const openGoogleCalendar = (sender: string, deadline: string, summary: string) => {
+    console.log('HomeScreen (iOS): User tapped "Add to calendar" button');
+    
+    const title = `Deadline: ${sender}`;
+    const formattedDate = `${deadline}/${deadline}`;
+    
+    const encodedTitle = encodeURIComponent(title);
+    const encodedDetails = encodeURIComponent(summary);
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${formattedDate}&details=${encodedDetails}`;
+    
+    Linking.openURL(url)
+      .then(() => {
+        console.log('HomeScreen (iOS): Successfully opened Google Calendar');
+      })
+      .catch((err) => {
+        console.error('HomeScreen (iOS): Failed to open Google Calendar:', err);
+        Alert.alert('Error', 'Failed to open Google Calendar');
+      });
+  };
+
+  const copyToClipboard = () => {
+    console.log('HomeScreen (iOS): User tapped "Copy" button');
+    Clipboard.setString(editableResponse);
+    Alert.alert('Success', 'Text copied to clipboard');
+  };
+
+  const closeResponseModal = () => {
+    console.log('HomeScreen (iOS): Closing response modal');
+    setShowResponseModal(false);
+    setGeneratedResponse('');
+    setEditableResponse('');
+  };
+
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
-  const emptyStateTitle = translate('home', 'emptyStateTitle', selectedLanguage);
-  const emptyStateSubtitle = translate('home', 'emptyStateSubtitle', selectedLanguage);
+  const emptyStateTitle = translate('home', 'scanFirstLetter', selectedLanguage);
+  const emptyStateSubtitle = translate('home', 'takePhoto', selectedLanguage);
 
   if (loading) {
     return (
@@ -705,6 +750,8 @@ export default function HomeScreen() {
   const deadline = analysis?.deadline;
   const daysRemaining = deadline ? calculateDaysRemaining(deadline) : null;
   const urgency = analysis?.urgency;
+  const actionSteps = analysis?.steps || [];
+  const responseTemplate = analysis?.response_template || '';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -955,16 +1002,147 @@ export default function HomeScreen() {
 
             {activeTab === 'action' && (
               <View style={styles.tabContent}>
-                <Text style={styles.placeholderText}>Action items will be displayed here</Text>
+                {actionSteps.length > 0 ? (
+                  <React.Fragment>
+                    {actionSteps.map((step, index) => {
+                      const stepNumber = step.number || index + 1;
+                      const stepTitle = step.title || '';
+                      const stepDescription = step.description || '';
+                      const stepLink = step.link || '';
+                      const stepDeadline = step.deadline || '';
+                      
+                      return (
+                        <View key={index} style={styles.actionStepCard}>
+                          <View style={styles.actionStepHeader}>
+                            <View style={styles.stepNumberCircle}>
+                              <Text style={styles.stepNumberText}>{stepNumber}</Text>
+                            </View>
+                            <View style={styles.actionStepContent}>
+                              <Text style={styles.actionStepTitle}>{stepTitle}</Text>
+                              <Text style={styles.actionStepDescription}>{stepDescription}</Text>
+                              {stepLink && (
+                                <TouchableOpacity
+                                  onPress={() => Linking.openURL(stepLink)}
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={styles.actionStepLink}>{stepLink}</Text>
+                                </TouchableOpacity>
+                              )}
+                              {stepDeadline && (
+                                <View style={styles.actionDeadlineBadge}>
+                                  <Text style={styles.actionDeadlineText}>Deadline: {stepDeadline}</Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })}
+                    {deadline && (
+                      <TouchableOpacity
+                        style={styles.addToCalendarButton}
+                        onPress={() => openGoogleCalendar(senderName, deadline, letterSubject)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.addToCalendarText}>📅 Add to calendar</Text>
+                      </TouchableOpacity>
+                    )}
+                  </React.Fragment>
+                ) : (
+                  <Text style={styles.placeholderText}>No action steps available</Text>
+                )}
               </View>
             )}
 
             {activeTab === 'response' && (
               <View style={styles.tabContent}>
-                <Text style={styles.placeholderText}>Response templates will be displayed here</Text>
+                {responseTemplate ? (
+                  <React.Fragment>
+                    <View style={styles.letterPreview}>
+                      <Text style={styles.letterPreviewText}>{responseTemplate}</Text>
+                    </View>
+                    <View style={styles.responseButtonsRow}>
+                      <TouchableOpacity
+                        style={styles.copyButton}
+                        onPress={copyToClipboard}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.copyButtonText}>Copy</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => {
+                          setEditableResponse(responseTemplate);
+                          setShowResponseModal(true);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.editButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.disclaimer}>
+                      <Text style={styles.disclaimerText}>
+                        This is a template. Always review and customize before sending. For legal advice, visit{' '}
+                        <Text
+                          style={styles.disclaimerLink}
+                          onPress={() => Linking.openURL('https://www.juridischloket.nl')}
+                        >
+                          Juridisch Loket
+                        </Text>
+                        .
+                      </Text>
+                    </View>
+                  </React.Fragment>
+                ) : (
+                  <Text style={styles.placeholderText}>No response template available</Text>
+                )}
               </View>
             )}
           </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Response Edit Modal */}
+      <Modal
+        visible={showResponseModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={closeResponseModal}
+      >
+        <SafeAreaView style={styles.responseModalContainer} edges={['top']}>
+          <View style={styles.responseModalHeader}>
+            <TouchableOpacity
+              onPress={closeResponseModal}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={24}
+                color="#475569"
+              />
+            </TouchableOpacity>
+            <Text style={styles.responseModalTitle}>Edit Response</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <ScrollView style={styles.responseModalScroll} contentContainerStyle={styles.responseModalScrollContent}>
+            <TextInput
+              style={styles.responseTextInput}
+              value={editableResponse}
+              onChangeText={setEditableResponse}
+              multiline
+              textAlignVertical="top"
+            />
+          </ScrollView>
+          <View style={styles.responseModalButtons}>
+            <TouchableOpacity
+              style={styles.responseModalCopyButton}
+              onPress={copyToClipboard}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.responseModalCopyButtonText}>Copy</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Modal>
 
@@ -1298,11 +1476,211 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     textDecorationStyle: 'dashed',
   },
+  actionStepCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  actionStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  stepNumberCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  stepNumberText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  actionStepContent: {
+    flex: 1,
+  },
+  actionStepTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  actionStepDescription: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 20.15,
+  },
+  actionStepLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3B82F6',
+    marginTop: 8,
+  },
+  actionDeadlineBadge: {
+    backgroundColor: 'rgba(220,38,38,0.06)',
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  actionDeadlineText: {
+    fontSize: 11,
+    color: '#DC2626',
+  },
+  addToCalendarButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(59,130,246,0.3)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addToCalendarText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  letterPreview: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 14,
+    padding: 20,
+    marginBottom: 16,
+  },
+  letterPreviewText: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 22.1,
+  },
+  responseButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  copyButton: {
+    flex: 1,
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  copyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  editButton: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.1)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  disclaimer: {
+    backgroundColor: 'rgba(124,58,237,0.04)',
+    borderRadius: 10,
+    padding: 12,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    lineHeight: 17.6,
+  },
+  disclaimerLink: {
+    color: '#7C3AED',
+    fontWeight: '600',
+  },
   placeholderText: {
     fontSize: 14,
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 40,
+  },
+  responseModalContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  responseModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,42,0.06)',
+  },
+  responseModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  responseModalScroll: {
+    flex: 1,
+  },
+  responseModalScrollContent: {
+    padding: 20,
+  },
+  responseTextInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 14,
+    padding: 16,
+    fontSize: 14,
+    color: '#0F172A',
+    lineHeight: 22.4,
+    minHeight: 400,
+  },
+  responseModalButtons: {
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(15,23,42,0.06)',
+  },
+  responseModalCopyButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  responseModalCopyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   deleteModalOverlay: {
     flex: 1,
