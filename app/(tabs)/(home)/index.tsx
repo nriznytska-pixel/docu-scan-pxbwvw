@@ -964,7 +964,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.accentBlue} />
         </View>
       </SafeAreaView>
     );
@@ -978,7 +978,7 @@ export default function HomeScreen() {
             ios_icon_name="doc.text.fill"
             android_material_icon_name="description"
             size={32}
-            color={colors.primary}
+            color={colors.accentBlue}
           />
           <Text style={styles.headerTitle}>{headerTitle}</Text>
         </View>
@@ -998,7 +998,7 @@ export default function HomeScreen() {
               ios_icon_name="doc.text"
               android_material_icon_name="description"
               size={80}
-              color={colors.primary}
+              color={colors.textMuted}
             />
             <Text style={styles.emptyStateText}>{emptyStateText}</Text>
             <Text style={styles.emptyStateSubtext}>{emptyStateSubtext}</Text>
@@ -1043,7 +1043,7 @@ export default function HomeScreen() {
                       ios_icon_name="trash"
                       android_material_icon_name="delete"
                       size={20}
-                      color={colors.error}
+                      color={colors.red}
                     />
                   </TouchableOpacity>
                 </TouchableOpacity>
@@ -1079,7 +1079,7 @@ export default function HomeScreen() {
             ios_icon_name="photo"
             android_material_icon_name="image"
             size={24}
-            color={colors.primary}
+            color={colors.accentBlue}
           />
           <Text style={styles.secondaryButtonText}>{galleryButtonText}</Text>
         </TouchableOpacity>
@@ -1105,46 +1105,46 @@ export default function HomeScreen() {
         transparent={false}
         onRequestClose={() => setShowPaywall(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }} edges={['top', 'bottom']}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.backgroundPrimary }} edges={['top', 'bottom']}>
           <View style={{ flex: 1, padding: 20 }}>
             <TouchableOpacity onPress={() => setShowPaywall(false)} style={{ alignSelf: 'flex-end', padding: 8 }}>
-              <Text style={{ fontSize: 24, color: '#64748B' }}>✕</Text>
+              <Text style={{ fontSize: 24, color: colors.textMuted }}>✕</Text>
             </TouchableOpacity>
             
             <View style={{ alignItems: 'center', marginTop: 20 }}>
               <Text style={{ fontSize: 48 }}>📄</Text>
-              <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1E293B', marginTop: 16, textAlign: 'center' }}>Безлімітний доступ</Text>
-              <Text style={{ fontSize: 16, color: '#64748B', marginTop: 8, textAlign: 'center' }}>Ви використали {scanCount} з {FREE_SCAN_LIMIT} безкоштовних сканувань</Text>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: colors.textPrimary, marginTop: 16, textAlign: 'center' }}>Безлімітний доступ</Text>
+              <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>Ви використали {scanCount} з {FREE_SCAN_LIMIT} безкоштовних сканувань</Text>
             </View>
 
             <View style={{ marginTop: 32, gap: 12 }}>
-              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#3B82F6', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: colors.accentBlue, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: colors.accentBlue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 4 }}>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щомісячно</Text>
                   <Text style={{ fontSize: 14, color: '#BFDBFE' }}>Скасувати будь-коли</Text>
                 </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€4.99</Text>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: 'white' }}>€4.99</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#1D4ED8', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: colors.accentBlueDark, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: colors.accentBlue, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 4 }}>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Щорічно</Text>
                   <Text style={{ fontSize: 14, color: '#BFDBFE' }}>2 місяці безкоштовно</Text>
                 </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€34.99</Text>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: 'white' }}>€34.99</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: '#059669', padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => showCustomAlert('Незабаром', 'Підписки будуть доступні найближчим часом!')} style={{ backgroundColor: colors.green, padding: 20, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: colors.green, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 4 }}>
                 <View>
                   <Text style={{ fontSize: 18, fontWeight: '600', color: 'white' }}>Назавжди</Text>
                   <Text style={{ fontSize: 14, color: '#A7F3D0' }}>Одноразова оплата</Text>
                 </View>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: 'white' }}>€29.99</Text>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: 'white' }}>€29.99</Text>
               </TouchableOpacity>
             </View>
 
             <View style={{ marginTop: 24, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center' }}>✓ Безлімітні сканування  ✓ Усі мови перекладу  ✓ Генерація відповідей</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>✓ Безлімітні сканування  ✓ Усі мови перекладу  ✓ Генерація відповідей</Text>
             </View>
           </View>
         </SafeAreaView>
@@ -1285,7 +1285,7 @@ export default function HomeScreen() {
                               })}
                               {generatingResponse && (
                                 <View style={styles.generatingContainer}>
-                                  <ActivityIndicator size="small" color={colors.primary} />
+                                  <ActivityIndicator size="small" color={colors.accentBlue} />
                                   <Text style={styles.generatingText}>Генерація відповіді...</Text>
                                 </View>
                               )}
@@ -1318,7 +1318,7 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                             {generatingResponse && (
                               <View style={styles.generatingContainer}>
-                                <ActivityIndicator size="small" color={colors.primary} />
+                                <ActivityIndicator size="small" color={colors.accentBlue} />
                                 <Text style={styles.generatingText}>{generatingResponseText}</Text>
                               </View>
                             )}
@@ -1329,7 +1329,7 @@ export default function HomeScreen() {
                   </>
                 ) : (
                   <View style={styles.analysisSection}>
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={colors.accentBlue} />
                     <Text style={styles.analyzingText}>Аналіз листа...</Text>
                     <Text style={styles.analyzingSubtext}>
                       Це може зайняти кілька секунд
@@ -1376,7 +1376,7 @@ export default function HomeScreen() {
                   ios_icon_name="doc.on.doc"
                   android_material_icon_name="content-copy"
                   size={20}
-                  color={colors.primary}
+                  color={colors.accentBlue}
                 />
                 <Text style={styles.responseActionText}>{copyButtonText}</Text>
               </TouchableOpacity>
@@ -1390,7 +1390,7 @@ export default function HomeScreen() {
                   ios_icon_name="envelope"
                   android_material_icon_name="email"
                   size={20}
-                  color={colors.primary}
+                  color={colors.accentBlue}
                 />
                 <Text style={styles.responseActionText}>Надіслати email</Text>
               </TouchableOpacity>
@@ -1487,7 +1487,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundPrimary,
     paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   loadingContainer: {
@@ -1499,11 +1499,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentBlue,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 16,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
   },
   uploadingText: {
     fontSize: 14,
@@ -1520,7 +1525,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -1531,8 +1536,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
     marginLeft: 12,
   },
   scrollView: {
@@ -1551,16 +1556,17 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.textPrimary,
     marginTop: 20,
     textAlign: 'center',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
+    lineHeight: 22.4,
   },
   documentsGrid: {
     flexDirection: 'row',
@@ -1569,27 +1575,27 @@ const styles = StyleSheet.create({
   },
   documentCard: {
     width: '48%',
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundWhite,
+    borderRadius: 16,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
-    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   documentThumbnail: {
     width: '100%',
     height: 150,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceSecondary,
   },
   imagePlaceholder: {
     width: '100%',
     height: 150,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1602,29 +1608,29 @@ const styles = StyleSheet.create({
   documentName: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   documentDate: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   deleteButton: {
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     borderRadius: 20,
     padding: 8,
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
+    elevation: 2,
   },
   actionButtons: {
     padding: 20,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -1632,16 +1638,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentBlue,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
   },
   primaryButtonText: {
     fontSize: 16,
@@ -1653,28 +1659,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.accentBlue,
     marginBottom: 12,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accentBlue,
     marginLeft: 8,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF3B30',
+    backgroundColor: colors.red,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
+    shadowColor: colors.red,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   logoutButtonText: {
     fontSize: 15,
@@ -1684,7 +1695,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundPrimary,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1692,7 +1703,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -1702,12 +1713,12 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accentBlue,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   modalScrollView: {
     flex: 1,
@@ -1718,15 +1729,15 @@ const styles = StyleSheet.create({
   detailImage: {
     width: '100%',
     height: 400,
-    backgroundColor: colors.background,
-    borderRadius: 12,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 16,
     marginBottom: 20,
   },
   detailImagePlaceholder: {
     width: '100%',
     height: 400,
-    backgroundColor: '#E5E5E5',
-    borderRadius: 12,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -1737,7 +1748,7 @@ const styles = StyleSheet.create({
   },
   detailPlaceholderText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     textAlign: 'center',
   },
   detailInfo: {
@@ -1745,21 +1756,26 @@ const styles = StyleSheet.create({
   },
   detailDate: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     textAlign: 'center',
   },
   analysisSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundWhite,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   analysisSectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
     marginBottom: 16,
   },
   analysisRow: {
@@ -1768,22 +1784,23 @@ const styles = StyleSheet.create({
   analysisLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.textMuted,
     marginBottom: 4,
   },
   analysisValue: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textPrimary,
+    lineHeight: 25.6,
   },
   analysisError: {
     fontSize: 14,
-    color: colors.error,
+    color: colors.red,
     textAlign: 'center',
   },
   analyzingText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginTop: 16,
     textAlign: 'center',
   },
@@ -1792,16 +1809,22 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
+    lineHeight: 22.4,
   },
   calendarButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentBlue,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     marginTop: 16,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
   },
   calendarButtonText: {
     fontSize: 14,
@@ -1810,25 +1833,35 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   templatesSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundWhite,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   templatesSectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   templateButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentBlue,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 8,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   templateButtonText: {
     fontSize: 14,
@@ -1844,21 +1877,26 @@ const styles = StyleSheet.create({
   },
   generatingText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textMuted,
     marginLeft: 8,
   },
   stepsSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundWhite,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   stepsSectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   stepRow: {
@@ -1868,29 +1906,40 @@ const styles = StyleSheet.create({
   stepNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accentBlue,
     marginRight: 8,
     minWidth: 24,
   },
   stepText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textSecondary,
     flex: 1,
+    lineHeight: 22.4,
   },
   sampleResponseSection: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundWhite,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   sampleResponseButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accentBlue,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 4,
   },
   sampleResponseButtonText: {
     fontSize: 16,
@@ -1898,17 +1947,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   responseContainer: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    backgroundColor: colors.backgroundWhite,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   responseText: {
     fontSize: 14,
-    color: colors.text,
-    lineHeight: 22,
+    color: colors.textSecondary,
+    lineHeight: 22.4,
   },
   responseActions: {
     flexDirection: 'row',
@@ -1917,17 +1971,17 @@ const styles = StyleSheet.create({
   responseActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.accentBlue,
   },
   responseActionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.accentBlue,
     marginLeft: 8,
   },
   deleteModalOverlay: {
@@ -1938,16 +1992,21 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   deleteModalContent: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.backgroundWhite,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
   },
   deleteModalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -1956,7 +2015,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 24,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22.4,
   },
   deleteModalButtons: {
     flexDirection: 'row',
@@ -1965,25 +2024,30 @@ const styles = StyleSheet.create({
   },
   deleteModalCancelButton: {
     flex: 1,
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.backgroundWhite,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.border,
   },
   deleteModalCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     textAlign: 'center',
   },
   deleteModalConfirmButton: {
     flex: 1,
-    backgroundColor: colors.error,
+    backgroundColor: colors.red,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 10,
+    shadowColor: colors.red,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   deleteModalConfirmText: {
     fontSize: 14,
