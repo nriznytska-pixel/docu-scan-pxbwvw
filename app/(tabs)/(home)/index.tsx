@@ -26,6 +26,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
+import { Swipeable } from 'react-native-gesture-handler';
 
 interface AnalysisData {
   content: [{ text: string }];
@@ -960,6 +961,24 @@ export default function HomeScreen() {
     return diffDays;
   };
 
+  const renderRightActions = (docId: string) => {
+    return (
+      <TouchableOpacity
+        style={styles.deleteSwipeButton}
+        onPress={() => confirmDeleteDocument(docId)}
+        activeOpacity={0.7}
+      >
+        <IconSymbol
+          ios_icon_name="trash"
+          android_material_icon_name="delete"
+          size={24}
+          color="#FFFFFF"
+        />
+        <Text style={styles.deleteSwipeButtonText}>Delete</Text>
+      </TouchableOpacity>
+    );
+  };
+
   const headerTitle = translate('home', 'myLetters', selectedLanguage);
   const emptyStateTitle = translate('home', 'scanFirstLetter', selectedLanguage);
   const emptyStateSubtitle = translate('home', 'takePhoto', selectedLanguage);
@@ -1028,27 +1047,33 @@ export default function HomeScreen() {
             const itemDeadlineText = itemAnalysis?.deadline;
             
             return (
-              <TouchableOpacity
-                style={styles.scanCard}
-                onPress={() => viewDocument(item)}
-                activeOpacity={0.7}
+              <Swipeable
+                renderRightActions={() => renderRightActions(item.id)}
+                overshootRight={false}
               >
-                <View style={styles.senderBadge}>
-                  <View style={styles.greenDot} />
-                  <Text style={styles.senderBadgeText}>{itemSenderText}</Text>
-                </View>
-                <Text style={styles.letterTitle} numberOfLines={2}>
-                  {itemTitleText}
-                </Text>
-                <Text style={styles.dateText}>{itemDateText}</Text>
-                {itemDeadlineText && (
-                  <View style={styles.deadlineBadge}>
-                    <Text style={styles.deadlineBadgeText}>
-                      Deadline: {itemDeadlineText}
-                    </Text>
+                <TouchableOpacity
+                  style={styles.scanCard}
+                  onPress={() => viewDocument(item)}
+                  onLongPress={() => confirmDeleteDocument(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.senderBadge}>
+                    <View style={styles.greenDot} />
+                    <Text style={styles.senderBadgeText}>{itemSenderText}</Text>
                   </View>
-                )}
-              </TouchableOpacity>
+                  <Text style={styles.letterTitle} numberOfLines={2}>
+                    {itemTitleText}
+                  </Text>
+                  <Text style={styles.dateText}>{itemDateText}</Text>
+                  {itemDeadlineText && (
+                    <View style={styles.deadlineBadge}>
+                      <Text style={styles.deadlineBadgeText}>
+                        Deadline: {itemDeadlineText}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </Swipeable>
             );
           }}
           contentContainerStyle={styles.scanListContent}
@@ -1077,16 +1102,17 @@ export default function HomeScreen() {
         onRequestClose={closeDocumentView}
       >
         <SafeAreaView style={styles.detailContainer} edges={['top']}>
-          {/* Top Section */}
+          {/* Top Section with larger back button */}
           <View style={styles.detailHeader}>
             <TouchableOpacity
               onPress={closeDocumentView}
+              style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <IconSymbol
                 ios_icon_name="arrow.left"
                 android_material_icon_name="arrow-back"
-                size={24}
+                size={28}
                 color="#475569"
               />
             </TouchableOpacity>
@@ -1532,6 +1558,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#DC2626',
   },
+  deleteSwipeButton: {
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 90,
+    marginBottom: 12,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  deleteSwipeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -1553,9 +1594,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   detailHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     backgroundColor: '#F8FAFC',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   detailScrollView: {
     flex: 1,
