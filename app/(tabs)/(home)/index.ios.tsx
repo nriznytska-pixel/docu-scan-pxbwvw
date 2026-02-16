@@ -869,7 +869,7 @@ export default function HomeScreen() {
         onRequestClose={closeDocumentView}
       >
         <SafeAreaView style={styles.detailContainer} edges={['top']}>
-          {/* Top Section with larger back button */}
+          {/* Header with back button, sender name, date and reference */}
           <View style={styles.detailHeader}>
             <TouchableOpacity
               onPress={closeDocumentView}
@@ -883,25 +883,17 @@ export default function HomeScreen() {
                 color="#475569"
               />
             </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerSenderName}>{senderName}</Text>
+              <View style={styles.headerSubtitleRow}>
+                <Text style={styles.headerSubtitle}>{letterDate}</Text>
+                <Text style={styles.headerSubtitle}> • </Text>
+                <Text style={styles.headerSubtitle}>Ref: {letterReference}</Text>
+              </View>
+            </View>
           </View>
 
           <ScrollView style={styles.detailScrollView} contentContainerStyle={styles.detailScrollContent}>
-            {/* Sender Badge */}
-            <View style={styles.detailSenderBadge}>
-              <View style={styles.greenDot} />
-              <Text style={styles.detailSenderText}>{senderName}</Text>
-            </View>
-
-            {/* Title */}
-            <Text style={styles.detailTitle}>{letterSubject}</Text>
-
-            {/* Subtitle */}
-            <View style={styles.detailSubtitleRow}>
-              <Text style={styles.detailSubtitle}>{letterDate}</Text>
-              <Text style={styles.detailSubtitle}> • </Text>
-              <Text style={styles.detailSubtitle}>Ref: {letterReference}</Text>
-            </View>
-
             {/* BSN Masked Badge */}
             {bsnDetected && (
               <View style={styles.bsnBadge}>
@@ -1355,62 +1347,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,42,0.06)',
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    marginRight: 12,
+  },
+  headerTitleContainer: {
+    flex: 1,
+  },
+  headerSenderName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  headerSubtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#94A3B8',
   },
   detailScrollView: {
     flex: 1,
   },
   detailScrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 40,
-  },
-  detailSenderBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.06)',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
-  detailSenderText: {
-    fontSize: 13,
-    color: '#475569',
-    fontWeight: '500',
-  },
-  detailTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
-    lineHeight: 28,
-  },
-  detailSubtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  detailSubtitle: {
-    fontSize: 13,
-    color: '#94A3B8',
   },
   bsnBadge: {
     backgroundColor: 'rgba(220,38,38,0.06)',
