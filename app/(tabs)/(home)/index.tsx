@@ -97,6 +97,7 @@ export default function HomeScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'action' | 'response'>('summary');
   const [editableResponse, setEditableResponse] = useState<string>('');
+  const [showImageSourceModal, setShowImageSourceModal] = useState(false);
   const FREE_SCAN_LIMIT = 3;
   
   // Custom modal state
@@ -801,6 +802,58 @@ export default function HomeScreen() {
     }
   };
 
+  const handleScanButtonPress = () => {
+    console.log('HomeScreen: User tapped scan button - showing image source options');
+    
+    if (scanCount >= FREE_SCAN_LIMIT) {
+      console.log('HomeScreen: Free scan limit reached, showing paywall');
+      setShowPaywall(true);
+      return;
+    }
+    
+    setShowImageSourceModal(true);
+  };
+
+  const handleTakePhoto = async () => {
+    console.log('HomeScreen: User selected "Take Photo" option');
+    setShowImageSourceModal(false);
+    
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      return;
+    }
+
+    console.log('HomeScreen: Launching camera');
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      await handleImageSelection(result);
+    } catch (error) {
+      console.error('HomeScreen: Error launching camera:', error);
+    }
+  };
+
+  const handleChooseFromGallery = async () => {
+    console.log('HomeScreen: User selected "Choose from Gallery" option');
+    setShowImageSourceModal(false);
+    
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      await handleImageSelection(result);
+    } catch (error) {
+      console.error('HomeScreen: Error launching gallery:', error);
+    }
+  };
+
   const scanDocument = async () => {
     console.log('HomeScreen: User tapped scan button');
     console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
@@ -1057,7 +1110,7 @@ export default function HomeScreen() {
       {/* Floating Scan Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={scanDocument}
+        onPress={handleScanButtonPress}
         activeOpacity={0.8}
       >
         <IconSymbol
@@ -1067,6 +1120,53 @@ export default function HomeScreen() {
           color="#FFFFFF"
         />
       </TouchableOpacity>
+
+      {/* Image Source Selection Modal */}
+      <Modal
+        visible={showImageSourceModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowImageSourceModal(false)}
+      >
+        <View style={styles.imageSourceModalOverlay}>
+          <View style={styles.imageSourceModalContent}>
+            <Text style={styles.imageSourceModalTitle}>Select Image Source</Text>
+            <TouchableOpacity
+              style={styles.imageSourceOption}
+              onPress={handleTakePhoto}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="camera.fill"
+                android_material_icon_name="camera"
+                size={24}
+                color="#3B82F6"
+              />
+              <Text style={styles.imageSourceOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.imageSourceOption}
+              onPress={handleChooseFromGallery}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="photo"
+                android_material_icon_name="photo"
+                size={24}
+                color="#3B82F6"
+              />
+              <Text style={styles.imageSourceOptionText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.imageSourceCancelButton}
+              onPress={() => setShowImageSourceModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.imageSourceCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Analysis Result Modal */}
       <Modal
@@ -1554,6 +1654,55 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 24,
     elevation: 8,
+  },
+  imageSourceModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  imageSourceModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    width: '100%',
+    paddingBottom: 40,
+  },
+  imageSourceModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  imageSourceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  imageSourceOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginLeft: 16,
+  },
+  imageSourceCancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  imageSourceCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#475569',
   },
   detailContainer: {
     flex: 1,
