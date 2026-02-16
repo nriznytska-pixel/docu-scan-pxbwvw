@@ -299,7 +299,6 @@ export default function HomeScreen() {
     
     if (status !== 'granted') {
       console.log('HomeScreen (iOS): Camera permission denied');
-      // Using ActionSheetIOS for iOS-specific alert
       ActionSheetIOS.showActionSheetWithOptions(
         {
           title: 'Дозвіл потрібен',
@@ -613,7 +612,6 @@ export default function HomeScreen() {
     }
   };
 
-  // FIX 1: Updated FAB handler to show ActionSheet with two options
   const handleScanButtonPress = () => {
     console.log('HomeScreen (iOS): User tapped scan button - showing ActionSheet');
     
@@ -628,6 +626,8 @@ export default function HomeScreen() {
       {
         options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
         cancelButtonIndex: 0,
+        title: 'Select Image Source',
+        message: 'Choose how you want to add your document',
       },
       (buttonIndex) => {
         if (buttonIndex === 1) {
@@ -758,7 +758,6 @@ export default function HomeScreen() {
     });
   };
 
-  // FIX 3: Updated settings navigation to use correct route
   const openSettings = () => {
     console.log('HomeScreen (iOS): User tapped settings button');
     router.push('/settings');

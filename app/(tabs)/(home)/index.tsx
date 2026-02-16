@@ -802,7 +802,6 @@ export default function HomeScreen() {
     }
   };
 
-  // FIX 1: Updated FAB handler to show Alert with two options
   const handleScanButtonPress = () => {
     console.log('HomeScreen: User tapped scan button - showing image source options');
     
@@ -815,7 +814,7 @@ export default function HomeScreen() {
     // Show Alert with two options: Take Photo and Choose from Gallery
     Alert.alert(
       'Select Image Source',
-      '',
+      'Choose how you want to add your document',
       [
         {
           text: 'Take Photo',
@@ -952,7 +951,6 @@ export default function HomeScreen() {
     });
   };
 
-  // FIX 3: Updated settings navigation to use correct route
   const handleSettingsPress = () => {
     console.log('HomeScreen: User tapped settings button');
     router.push('/settings');
