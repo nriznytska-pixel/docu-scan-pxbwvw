@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
 import { Swipeable } from 'react-native-gesture-handler';
+import { useRouter } from 'expo-router';
 
 interface AnalysisData {
   content: [{ text: string }];
@@ -75,6 +76,7 @@ const DEFAULT_LANGUAGE = 'uk';
 export default function HomeScreen() {
   console.log('HomeScreen: Component rendered');
   
+  const router = useRouter();
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
   const { user, signOut } = useAuth();
   
@@ -920,37 +922,9 @@ export default function HomeScreen() {
     });
   };
 
-  const handleLogout = async () => {
-    console.log('HomeScreen: User tapped logout');
-    
-    const logoutModalTitle = translate('settings', 'logoutModalTitle', selectedLanguage);
-    const logoutModalMessage = translate('settings', 'logoutModalMessage', selectedLanguage);
-    const cancelButtonText = translate('settings', 'cancel', selectedLanguage);
-    const logoutButtonText = translate('settings', 'logout', selectedLanguage);
-    
-    showCustomAlert(
-      logoutModalTitle,
-      logoutModalMessage,
-      [
-        {
-          text: cancelButtonText,
-          style: 'cancel',
-          onPress: () => console.log('Logout cancelled'),
-        },
-        {
-          text: logoutButtonText,
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-            } catch (error) {
-              console.error('HomeScreen: Logout error:', error);
-              showCustomAlert('Помилка', 'Не вдалося вийти');
-            }
-          },
-        },
-      ]
-    );
+  const handleSettingsPress = () => {
+    console.log('HomeScreen: User tapped settings button');
+    router.push('/settings');
   };
 
   const calculateDaysRemaining = (deadline: string): number => {
@@ -1011,7 +985,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{headerTitle}</Text>
         <TouchableOpacity
-          onPress={handleLogout}
+          onPress={handleSettingsPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <IconSymbol
