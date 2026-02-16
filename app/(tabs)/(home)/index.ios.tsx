@@ -10,11 +10,11 @@ import {
   Platform,
   Modal,
   ActivityIndicator,
-  Alert,
   Linking,
   Clipboard,
   ScrollView,
   TextInput,
+  ActionSheetIOS,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -98,7 +98,6 @@ export default function HomeScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'action' | 'response'>('summary');
   const [editableResponse, setEditableResponse] = useState<string>('');
-  const [showImageSourceModal, setShowImageSourceModal] = useState(false);
   const FREE_SCAN_LIMIT = 3;
 
   useEffect(() => {
@@ -300,9 +299,15 @@ export default function HomeScreen() {
     
     if (status !== 'granted') {
       console.log('HomeScreen (iOS): Camera permission denied');
-      Alert.alert(
-        'Дозвіл потрібен',
-        'Будь ласка, надайте доступ до камери для сканування документів.'
+      // Using ActionSheetIOS for iOS-specific alert
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Дозвіл потрібен',
+          message: 'Будь ласка, надайте доступ до камери для сканування документів.',
+          options: ['OK'],
+          cancelButtonIndex: 0,
+        },
+        () => {}
       );
       return false;
     }
@@ -408,7 +413,15 @@ export default function HomeScreen() {
     
     if (!user) {
       console.error('HomeScreen (iOS): No user logged in, cannot save scan');
-      Alert.alert('Помилка', 'Ви повинні увійти в систему для збереження сканів');
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Помилка',
+          message: 'Ви повинні увійти в систему для збереження сканів',
+          options: ['OK'],
+          cancelButtonIndex: 0,
+        },
+        () => {}
+      );
       return false;
     }
     
@@ -437,9 +450,14 @@ export default function HomeScreen() {
         console.error('Details:', insertError.details);
         console.error('Hint:', insertError.hint);
         
-        Alert.alert(
-          'Помилка збереження',
-          `Не вдалося зберегти запис.\n\nПовідомлення: ${insertError.message}\nКод: ${insertError.code || 'N/A'}\n\nПеревірте налаштування таблиці "scans" у Supabase.`
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title: 'Помилка збереження',
+            message: `Не вдалося зберегти запис.\n\nПовідомлення: ${insertError.message}\nКод: ${insertError.code || 'N/A'}\n\nПеревірте налаштування таблиці "scans" у Supabase.`,
+            options: ['OK'],
+            cancelButtonIndex: 0,
+          },
+          () => {}
         );
         return false;
       }
@@ -491,9 +509,14 @@ export default function HomeScreen() {
       console.error('HomeScreen (iOS): ========== EXCEPTION IN SAVE ==========');
       console.error('Exception:', JSON.stringify(error, null, 2));
       
-      Alert.alert(
-        'Помилка',
-        `Виняток при збереженні: ${error?.message || 'Невідома помилка'}`
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Помилка',
+          message: `Виняток при збереженні: ${error?.message || 'Невідома помилка'}`,
+          options: ['OK'],
+          cancelButtonIndex: 0,
+        },
+        () => {}
       );
       return false;
     }
@@ -518,7 +541,15 @@ export default function HomeScreen() {
       
       if (!compressedBase64) {
         console.error('HomeScreen (iOS): Compression failed');
-        Alert.alert('Помилка', 'Не вдалося стиснути зображення.');
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title: 'Помилка',
+            message: 'Не вдалося стиснути зображення.',
+            options: ['OK'],
+            cancelButtonIndex: 0,
+          },
+          () => {}
+        );
         setUploading(false);
         return;
       }
@@ -528,7 +559,15 @@ export default function HomeScreen() {
       
       if (!imageUrl) {
         console.error('HomeScreen (iOS): Upload to storage failed');
-        Alert.alert('Помилка', 'Не вдалося завантажити зображення до сховища.');
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title: 'Помилка',
+            message: 'Не вдалося завантажити зображення до сховища.',
+            options: ['OK'],
+            cancelButtonIndex: 0,
+          },
+          () => {}
+        );
         setUploading(false);
         return;
       }
@@ -544,7 +583,15 @@ export default function HomeScreen() {
       }
 
       console.log('HomeScreen (iOS): ========== UPLOAD COMPLETE ==========');
-      Alert.alert('Успіх', 'Лист успішно завантажено!');
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Успіх',
+          message: 'Лист успішно завантажено!',
+          options: ['OK'],
+          cancelButtonIndex: 0,
+        },
+        () => {}
+      );
       
       console.log('HomeScreen (iOS): Refreshing scans list');
       await fetchScans();
@@ -553,16 +600,22 @@ export default function HomeScreen() {
       console.error('HomeScreen (iOS): ========== UPLOAD PROCESS ERROR ==========');
       console.error('Error:', JSON.stringify(error, null, 2));
       
-      Alert.alert(
-        'Помилка',
-        `Не вдалося завантажити зображення.\n\n${error?.message || 'Невідома помилка'}`
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Помилка',
+          message: `Не вдалося завантажити зображення.\n\n${error?.message || 'Невідома помилка'}`,
+          options: ['OK'],
+          cancelButtonIndex: 0,
+        },
+        () => {}
       );
       setUploading(false);
     }
   };
 
+  // FIX 1: Updated FAB handler to show ActionSheet with two options
   const handleScanButtonPress = () => {
-    console.log('HomeScreen (iOS): User tapped scan button - showing image source options');
+    console.log('HomeScreen (iOS): User tapped scan button - showing ActionSheet');
     
     if (scanCount >= FREE_SCAN_LIMIT) {
       console.log('HomeScreen: Free scan limit reached, showing paywall');
@@ -570,58 +623,27 @@ export default function HomeScreen() {
       return;
     }
     
-    setShowImageSourceModal(true);
-  };
-
-  const handleTakePhoto = async () => {
-    console.log('HomeScreen (iOS): User selected "Take Photo" option');
-    setShowImageSourceModal(false);
-    
-    const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      return;
-    }
-
-    console.log('HomeScreen (iOS): Launching camera');
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 1,
-      });
-
-      await handleImageSelection(result);
-    } catch (error) {
-      console.error('HomeScreen (iOS): Error launching camera:', error);
-    }
-  };
-
-  const handleChooseFromGallery = async () => {
-    console.log('HomeScreen (iOS): User selected "Choose from Gallery" option');
-    setShowImageSourceModal(false);
-    
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 1,
-      });
-
-      await handleImageSelection(result);
-    } catch (error) {
-      console.error('HomeScreen (iOS): Error launching gallery:', error);
-    }
+    // Show ActionSheet with two options: Take Photo and Choose from Gallery
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
+        cancelButtonIndex: 0,
+      },
+      (buttonIndex) => {
+        if (buttonIndex === 1) {
+          console.log('HomeScreen (iOS): User selected "Take Photo"');
+          scanDocument();
+        } else if (buttonIndex === 2) {
+          console.log('HomeScreen (iOS): User selected "Choose from Gallery"');
+          importFromGallery();
+        }
+      }
+    );
   };
 
   const scanDocument = async () => {
-    console.log('HomeScreen (iOS): User tapped scan button');
+    console.log('HomeScreen (iOS): scanDocument called - launching camera');
     console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
-    
-    if (scanCount >= FREE_SCAN_LIMIT) {
-      console.log('HomeScreen: Free scan limit reached, showing paywall');
-      setShowPaywall(true);
-      return;
-    }
     
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) {
@@ -643,14 +665,8 @@ export default function HomeScreen() {
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen (iOS): User tapped gallery button');
+    console.log('HomeScreen (iOS): importFromGallery called - launching gallery');
     console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
-    
-    if (scanCount >= FREE_SCAN_LIMIT) {
-      console.log('HomeScreen: Free scan limit reached, showing paywall');
-      setShowPaywall(true);
-      return;
-    }
     
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -702,7 +718,15 @@ export default function HomeScreen() {
 
       if (error) {
         console.error('HomeScreen (iOS): Delete error:', JSON.stringify(error, null, 2));
-        Alert.alert('Помилка', 'Не вдалося видалити лист.');
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title: 'Помилка',
+            message: 'Не вдалося видалити лист.',
+            options: ['OK'],
+            cancelButtonIndex: 0,
+          },
+          () => {}
+        );
       } else {
         console.log('HomeScreen (iOS): Document deleted successfully');
         await fetchScans();
@@ -734,6 +758,7 @@ export default function HomeScreen() {
     });
   };
 
+  // FIX 3: Updated settings navigation to use correct route
   const openSettings = () => {
     console.log('HomeScreen (iOS): User tapped settings button');
     router.push('/settings');
@@ -764,14 +789,30 @@ export default function HomeScreen() {
       })
       .catch((err) => {
         console.error('HomeScreen (iOS): Failed to open Google Calendar:', err);
-        Alert.alert('Error', 'Failed to open Google Calendar');
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            title: 'Error',
+            message: 'Failed to open Google Calendar',
+            options: ['OK'],
+            cancelButtonIndex: 0,
+          },
+          () => {}
+        );
       });
   };
 
   const copyToClipboard = () => {
     console.log('HomeScreen (iOS): User tapped "Copy" button');
     Clipboard.setString(editableResponse);
-    Alert.alert('Success', 'Text copied to clipboard');
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: 'Success',
+        message: 'Text copied to clipboard',
+        options: ['OK'],
+        cancelButtonIndex: 0,
+      },
+      () => {}
+    );
   };
 
   const closeResponseModal = () => {
@@ -913,56 +954,6 @@ export default function HomeScreen() {
           color="#FFFFFF"
         />
       </TouchableOpacity>
-
-      {/* Image Source Selection Modal */}
-      <Modal
-        visible={showImageSourceModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowImageSourceModal(false)}
-      >
-        <View style={styles.imageSourceModalOverlay}>
-          <View style={styles.imageSourceModalContent}>
-            <Text style={styles.imageSourceModalTitle}>Select Image Source</Text>
-            <TouchableOpacity
-              style={styles.imageSourceOption}
-              onPress={handleTakePhoto}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                ios_icon_name="camera.fill"
-                android_material_icon_name="camera"
-                size={24}
-                color="#3B82F6"
-              />
-              <Text style={styles.imageSourceOptionText}>Take Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.imageSourceOption}
-              onPress={handleChooseFromGallery}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                ios_icon_name="photo"
-                android_material_icon_name="photo"
-                size={24}
-                color="#3B82F6"
-              />
-              <Text style={styles.imageSourceOptionText}>Choose from Gallery</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.imageSourceCancelButton}
-              onPress={() => setShowImageSourceModal(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.imageSourceCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Analysis Result Modal - Truncated for brevity, same as base file */}
-      {/* ... rest of the modals ... */}
 
       {/* Delete Modal */}
       <Modal
@@ -1142,56 +1133,6 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 8,
   },
-  imageSourceModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  imageSourceModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    width: '100%',
-    paddingBottom: 40,
-  },
-  imageSourceModalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  imageSourceOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  imageSourceOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginLeft: 16,
-  },
-  imageSourceCancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  imageSourceCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  // ... rest of styles (same as base file)
   deleteModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
