@@ -442,7 +442,7 @@ export default function HomeScreen() {
   };
 
   const generateSampleResponse = async (analysis: ParsedAnalysisContent) => {
-    console.log('HomeScreen: User tapped "Sample response letter" button');
+    console.log('HomeScreen: User tapped "Generate Response Letter" button');
     console.log('HomeScreen: Generating sample response for analysis:', JSON.stringify(analysis, null, 2));
     
     if (!selectedDocument) {
@@ -465,7 +465,6 @@ export default function HomeScreen() {
       if (error) {
         console.error('HomeScreen: Generate response API error:', error);
         
-        // Check if it's an authentication error
         if (error.includes('Authentication')) {
           showCustomAlert(
             'Помилка автентифікації',
@@ -811,7 +810,6 @@ export default function HomeScreen() {
       return;
     }
     
-    // Show Alert with two options: Take Photo and Choose from Gallery
     Alert.alert(
       'Select Image Source',
       'Choose how you want to add your document',
@@ -1010,7 +1008,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Top Bar */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{headerTitle}</Text>
         <TouchableOpacity
@@ -1026,7 +1023,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Scan List */}
       {documents.length === 0 ? (
         <View style={styles.emptyStateContainer}>
           <IconSymbol
@@ -1083,7 +1079,6 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* Floating Scan Button */}
       <TouchableOpacity
         style={styles.fab}
         onPress={handleScanButtonPress}
@@ -1097,7 +1092,6 @@ export default function HomeScreen() {
         />
       </TouchableOpacity>
 
-      {/* Analysis Result Modal */}
       <Modal
         visible={!!selectedDocument}
         animationType="slide"
@@ -1105,7 +1099,6 @@ export default function HomeScreen() {
         onRequestClose={closeDocumentView}
       >
         <SafeAreaView style={styles.detailContainer} edges={['top']}>
-          {/* Header with back button, sender name, date and reference */}
           <View style={styles.detailHeader}>
             <TouchableOpacity
               onPress={closeDocumentView}
@@ -1130,14 +1123,12 @@ export default function HomeScreen() {
           </View>
 
           <ScrollView style={styles.detailScrollView} contentContainerStyle={styles.detailScrollContent}>
-            {/* BSN Masked Badge */}
             {bsnDetected && (
               <View style={styles.bsnBadge}>
                 <Text style={styles.bsnBadgeText}>🔒 BSN: ●●●● ●● ●●● — masked</Text>
               </View>
             )}
 
-            {/* Urgency Banner */}
             {deadline && (
               <View style={styles.urgencyBanner}>
                 <View style={styles.urgencyBannerTop}>
@@ -1152,7 +1143,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Tabs */}
             <View style={styles.tabBar}>
               <TouchableOpacity
                 style={[styles.tab, activeTab === 'summary' && styles.tabActive]}
@@ -1183,10 +1173,8 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Tab Content */}
             {activeTab === 'summary' && analysis && (
               <View style={styles.tabContent}>
-                {/* Summary Card */}
                 <View style={styles.summaryCard}>
                   <View style={[styles.iconContainer, { backgroundColor: 'rgba(59,130,246,0.06)' }]}>
                     <Text style={styles.iconEmoji}>📄</Text>
@@ -1196,7 +1184,6 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
-                {/* Type Card */}
                 {analysis.type && (
                   <View style={styles.summaryCard}>
                     <View style={[styles.iconContainer, { backgroundColor: 'rgba(124,58,237,0.06)' }]}>
@@ -1209,7 +1196,6 @@ export default function HomeScreen() {
                   </View>
                 )}
 
-                {/* Amount Card */}
                 {analysis.amount && (
                   <View style={styles.summaryCard}>
                     <View style={[styles.iconContainer, { backgroundColor: 'rgba(16,185,129,0.06)' }]}>
@@ -1222,7 +1208,6 @@ export default function HomeScreen() {
                   </View>
                 )}
 
-                {/* Urgency Card */}
                 {urgency && (
                   <View style={styles.summaryCard}>
                     <View style={[styles.iconContainer, { backgroundColor: 'rgba(217,119,6,0.06)' }]}>
@@ -1237,7 +1222,6 @@ export default function HomeScreen() {
                   </View>
                 )}
 
-                {/* Tips Card */}
                 <View style={styles.summaryCard}>
                   <View style={[styles.iconContainer, { backgroundColor: 'rgba(124,58,237,0.06)' }]}>
                     <Text style={styles.iconEmoji}>💡</Text>
@@ -1302,6 +1286,66 @@ export default function HomeScreen() {
                       </TouchableOpacity>
                     )}
                   </React.Fragment>
+                ) : analysis ? (
+                  <React.Fragment>
+                    <View style={styles.actionStepCard}>
+                      <View style={styles.actionStepHeader}>
+                        <View style={styles.stepNumberCircle}>
+                          <Text style={styles.stepNumberText}>1</Text>
+                        </View>
+                        <View style={styles.actionStepContent}>
+                          <Text style={styles.actionStepTitle}>Read and understand the letter from {senderName}</Text>
+                          <Text style={styles.actionStepDescription}>Carefully review the content and identify key information.</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {deadline && (
+                      <View style={styles.actionStepCard}>
+                        <View style={styles.actionStepHeader}>
+                          <View style={styles.stepNumberCircle}>
+                            <Text style={styles.stepNumberText}>2</Text>
+                          </View>
+                          <View style={styles.actionStepContent}>
+                            <Text style={styles.actionStepTitle}>Check the deadline</Text>
+                            <Text style={styles.actionStepDescription}>Make sure you respond before the deadline.</Text>
+                            <View style={styles.actionDeadlineBadge}>
+                              <Text style={styles.actionDeadlineText}>Deadline: {deadline}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={styles.actionStepCard}>
+                      <View style={styles.actionStepHeader}>
+                        <View style={styles.stepNumberCircle}>
+                          <Text style={styles.stepNumberText}>{deadline ? '3' : '2'}</Text>
+                        </View>
+                        <View style={styles.actionStepContent}>
+                          <Text style={styles.actionStepTitle}>Respond if needed</Text>
+                          <Text style={styles.actionStepDescription}>Go to the Response tab to generate a reply letter.</Text>
+                          <TouchableOpacity
+                            style={styles.goToResponseButton}
+                            onPress={() => setActiveTab('response')}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.goToResponseButtonText}>Go to Response tab →</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+
+                    {deadline && (
+                      <TouchableOpacity
+                        style={styles.addToCalendarButton}
+                        onPress={() => openGoogleCalendar(senderName, deadline, letterSubject)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.addToCalendarText}>📅 Add to calendar</Text>
+                      </TouchableOpacity>
+                    )}
+                  </React.Fragment>
                 ) : (
                   <Text style={styles.placeholderText}>No action steps available</Text>
                 )}
@@ -1348,7 +1392,29 @@ export default function HomeScreen() {
                     </View>
                   </React.Fragment>
                 ) : (
-                  <Text style={styles.placeholderText}>No response template available</Text>
+                  <View style={styles.emptyResponseContainer}>
+                    <Text style={styles.emptyResponseIcon}>✉️</Text>
+                    <Text style={styles.emptyResponseTitle}>Response letter</Text>
+                    <Text style={styles.emptyResponseDescription}>
+                      Generate a professional response letter based on the analysis of this document.
+                    </Text>
+                    {generatingResponse ? (
+                      <View style={styles.generatingContainer}>
+                        <ActivityIndicator size="large" color="#3B82F6" />
+                        <Text style={styles.generatingText}>Generating response...</Text>
+                      </View>
+                    ) : (
+                      analysis && (
+                        <TouchableOpacity
+                          style={styles.generateResponseButton}
+                          onPress={() => generateSampleResponse(analysis)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.generateResponseButtonText}>Generate Response Letter</Text>
+                        </TouchableOpacity>
+                      )
+                    )}
+                  </View>
                 )}
               </View>
             )}
@@ -1356,7 +1422,6 @@ export default function HomeScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Response Edit Modal */}
       <Modal
         visible={showResponseModal}
         animationType="slide"
@@ -1400,7 +1465,6 @@ export default function HomeScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Custom Alert Modal */}
       <Modal
         visible={customModal.visible}
         animationType="fade"
@@ -1812,6 +1876,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#DC2626',
   },
+  goToResponseButton: {
+    backgroundColor: 'rgba(59,130,246,0.06)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  goToResponseButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
   addToCalendarButton: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -1896,6 +1973,56 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     marginTop: 40,
+  },
+  emptyResponseContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyResponseIcon: {
+    fontSize: 60,
+    marginBottom: 16,
+  },
+  emptyResponseTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyResponseDescription: {
+    fontSize: 14,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 22.4,
+    marginBottom: 24,
+  },
+  generatingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  generatingText: {
+    fontSize: 14,
+    color: '#475569',
+    marginTop: 12,
+  },
+  generateResponseButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  generateResponseButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   responseModalContainer: {
     flex: 1,
