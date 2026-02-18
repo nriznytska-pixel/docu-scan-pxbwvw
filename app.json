@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Docu Scan",
-    "slug": "docu-scan",
+    "slug": "Docu Scan",
     "owner": "nriznytska",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -51,7 +51,7 @@
         }
       ]
     ],
-    "scheme": "docuscan",
+    "scheme": "Docu Scan",
     "experiments": {
       "typedRoutes": true
     },
