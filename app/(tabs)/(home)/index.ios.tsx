@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -407,8 +406,7 @@ export default function HomeScreen() {
     console.log('HomeScreen (iOS): Image URL:', imageUrl);
     
     const languageToSave = selectedLanguage || DEFAULT_LANGUAGE;
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - Language to save:', languageToSave);
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - Language type:', typeof languageToSave);
+    console.log('HomeScreen (iOS): Language to save:', languageToSave);
     
     if (!user) {
       console.error('HomeScreen (iOS): No user logged in, cannot save scan');
@@ -424,8 +422,6 @@ export default function HomeScreen() {
       return false;
     }
     
-    console.log('HomeScreen (iOS): 🔍 User ID:', user.id);
-    
     const dataToInsert = { 
       image_url: imageUrl,
       created_at: new Date().toISOString(),
@@ -433,7 +429,7 @@ export default function HomeScreen() {
       user_id: user.id,
     };
     
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - Full data object to insert:', JSON.stringify(dataToInsert, null, 2));
+    console.log('HomeScreen (iOS): Data to insert:', JSON.stringify(dataToInsert, null, 2));
     
     try {
       const { data: insertData, error: insertError } = await supabase
@@ -442,17 +438,12 @@ export default function HomeScreen() {
         .select();
 
       if (insertError) {
-        console.error('HomeScreen (iOS): ========== INSERT ERROR ==========');
-        console.error('Full error:', JSON.stringify(insertError, null, 2));
-        console.error('Message:', insertError.message);
-        console.error('Code:', insertError.code);
-        console.error('Details:', insertError.details);
-        console.error('Hint:', insertError.hint);
+        console.error('HomeScreen (iOS): Insert error:', JSON.stringify(insertError, null, 2));
         
         ActionSheetIOS.showActionSheetWithOptions(
           {
             title: 'Помилка збереження',
-            message: `Не вдалося зберегти запис.\n\nПовідомлення: ${insertError.message}\nКод: ${insertError.code || 'N/A'}\n\nПеревірте налаштування таблиці "scans" у Supabase.`,
+            message: `Не вдалося зберегти запис.\n\n${insertError.message}`,
             options: ['OK'],
             cancelButtonIndex: 0,
           },
@@ -461,27 +452,12 @@ export default function HomeScreen() {
         return false;
       }
 
-      console.log('HomeScreen (iOS): ========== INSERT SUCCESS ==========');
-      console.log('HomeScreen (iOS): 🔍 CRITICAL - Data returned from Supabase:', JSON.stringify(insertData, null, 2));
+      console.log('HomeScreen (iOS): Insert success:', JSON.stringify(insertData, null, 2));
       
-      if (insertData && insertData.length > 0) {
-        const savedLanguage = insertData[0].language;
-        console.log('HomeScreen (iOS): 🔍 CRITICAL - Language saved in database:', savedLanguage);
-        if (savedLanguage !== languageToSave) {
-          console.error('HomeScreen (iOS): ⚠️ WARNING - Language mismatch!');
-          console.error(`  Expected: "${languageToSave}"`);
-          console.error(`  Got: "${savedLanguage}"`);
-        } else {
-          console.log('HomeScreen (iOS): ✅ Language saved correctly!');
-        }
-      }
-      
-      console.log('HomeScreen (iOS): Creating scan record in backend API');
       const backendUrl = Constants.expoConfig?.extra?.backendUrl;
       
       if (backendUrl) {
         try {
-          console.log('HomeScreen (iOS): 🔍 Sending language to backend:', languageToSave);
           const backendResponse = await fetch(`${backendUrl}/scans`, {
             method: 'POST',
             headers: {
@@ -499,14 +475,11 @@ export default function HomeScreen() {
         } catch (backendError: any) {
           console.error('HomeScreen (iOS): Backend API exception:', backendError?.message);
         }
-      } else {
-        console.warn('HomeScreen (iOS): Backend URL not configured, skipping backend API call');
       }
       
       return true;
     } catch (error: any) {
-      console.error('HomeScreen (iOS): ========== EXCEPTION IN SAVE ==========');
-      console.error('Exception:', JSON.stringify(error, null, 2));
+      console.error('HomeScreen (iOS): Exception in save:', error);
       
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -528,18 +501,14 @@ export default function HomeScreen() {
     }
 
     const uri = pickerResult.assets[0].uri;
-    console.log('HomeScreen (iOS): ========== STARTING IMAGE UPLOAD PROCESS ==========');
-    console.log('HomeScreen (iOS): Selected image URI:', uri);
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage at start of upload:', selectedLanguage);
+    console.log('HomeScreen (iOS): Starting image upload process');
     
     setUploading(true);
 
     try {
-      console.log('HomeScreen (iOS): Step 1 - Compressing image');
       const compressedBase64 = await compressImage(uri);
       
       if (!compressedBase64) {
-        console.error('HomeScreen (iOS): Compression failed');
         ActionSheetIOS.showActionSheetWithOptions(
           {
             title: 'Помилка',
@@ -553,11 +522,9 @@ export default function HomeScreen() {
         return;
       }
 
-      console.log('HomeScreen (iOS): Step 2 - Uploading to Supabase Storage');
       const imageUrl = await uploadToSupabase(compressedBase64);
       
       if (!imageUrl) {
-        console.error('HomeScreen (iOS): Upload to storage failed');
         ActionSheetIOS.showActionSheetWithOptions(
           {
             title: 'Помилка',
@@ -571,33 +538,18 @@ export default function HomeScreen() {
         return;
       }
 
-      console.log('HomeScreen (iOS): Step 3 - Saving to database');
-      console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage before saveToDatabase call:', selectedLanguage);
       const saved = await saveToDatabase(imageUrl);
       
       if (!saved) {
-        console.error('HomeScreen (iOS): Database save failed');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen (iOS): ========== UPLOAD COMPLETE ==========');
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          title: 'Успіх',
-          message: 'Лист успішно завантажено!',
-          options: ['OK'],
-          cancelButtonIndex: 0,
-        },
-        () => {}
-      );
-      
-      console.log('HomeScreen (iOS): Refreshing scans list');
+      console.log('HomeScreen (iOS): Upload complete, refreshing scans');
       await fetchScans();
       setUploading(false);
     } catch (error: any) {
-      console.error('HomeScreen (iOS): ========== UPLOAD PROCESS ERROR ==========');
-      console.error('Error:', JSON.stringify(error, null, 2));
+      console.error('HomeScreen (iOS): Upload process error:', error);
       
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -613,7 +565,7 @@ export default function HomeScreen() {
   };
 
   const handleScanButtonPress = () => {
-    console.log('HomeScreen (iOS): User tapped scan button - showing ActionSheet');
+    console.log('HomeScreen (iOS): User tapped scan button');
     
     if (scanCount >= FREE_SCAN_LIMIT) {
       console.log('HomeScreen: Free scan limit reached, showing paywall');
@@ -621,7 +573,6 @@ export default function HomeScreen() {
       return;
     }
     
-    // Show ActionSheet with two options: Take Photo and Choose from Gallery
     ActionSheetIOS.showActionSheetWithOptions(
       {
         options: ['Cancel', 'Take Photo', 'Choose from Gallery'],
@@ -631,10 +582,8 @@ export default function HomeScreen() {
       },
       (buttonIndex) => {
         if (buttonIndex === 1) {
-          console.log('HomeScreen (iOS): User selected "Take Photo"');
           scanDocument();
         } else if (buttonIndex === 2) {
-          console.log('HomeScreen (iOS): User selected "Choose from Gallery"');
           importFromGallery();
         }
       }
@@ -642,22 +591,15 @@ export default function HomeScreen() {
   };
 
   const scanDocument = async () => {
-    console.log('HomeScreen (iOS): scanDocument called - launching camera');
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
-    
     const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      return;
-    }
+    if (!hasPermission) return;
 
-    console.log('HomeScreen (iOS): Launching camera');
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
       });
-
       await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen (iOS): Error launching camera:', error);
@@ -665,16 +607,12 @@ export default function HomeScreen() {
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen (iOS): importFromGallery called - launching gallery');
-    console.log('HomeScreen (iOS): 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
-    
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
       });
-
       await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen (iOS): Error launching gallery:', error);
@@ -682,34 +620,27 @@ export default function HomeScreen() {
   };
 
   const viewDocument = (doc: ScannedDocument) => {
-    console.log('HomeScreen (iOS): User tapped letter card, opening detail view for ID:', doc.id);
-    console.log('HomeScreen (iOS): Document language:', doc.language || 'null');
-    console.log('HomeScreen (iOS): Document has analysis:', !!doc.analysis);
+    console.log('HomeScreen (iOS): Opening detail view for ID:', doc.id);
     setSelectedDocument(doc);
     setDetailImageError(false);
     setActiveTab('summary');
   };
 
   const closeDocumentView = () => {
-    console.log('HomeScreen (iOS): Closing document view');
     setSelectedDocument(null);
     setDetailImageError(false);
     setActiveTab('summary');
+    setEditableResponse('');
   };
 
   const confirmDeleteDocument = (docId: string) => {
-    console.log('HomeScreen (iOS): User requested delete for document ID:', docId);
     setDocumentToDelete(docId);
     setShowDeleteModal(true);
   };
 
   const deleteDocument = async () => {
-    if (!documentToDelete) {
-      return;
-    }
+    if (!documentToDelete) return;
 
-    console.log('HomeScreen (iOS): Deleting document ID:', documentToDelete);
-    
     try {
       const { error } = await supabase
         .from('scans')
@@ -717,7 +648,6 @@ export default function HomeScreen() {
         .eq('id', documentToDelete);
 
       if (error) {
-        console.error('HomeScreen (iOS): Delete error:', JSON.stringify(error, null, 2));
         ActionSheetIOS.showActionSheetWithOptions(
           {
             title: 'Помилка',
@@ -728,7 +658,6 @@ export default function HomeScreen() {
           () => {}
         );
       } else {
-        console.log('HomeScreen (iOS): Document deleted successfully');
         await fetchScans();
       }
     } catch (error) {
@@ -744,7 +673,6 @@ export default function HomeScreen() {
   };
 
   const cancelDelete = () => {
-    console.log('HomeScreen (iOS): Delete cancelled');
     setShowDeleteModal(false);
     setDocumentToDelete(null);
   };
@@ -771,37 +699,7 @@ export default function HomeScreen() {
     return diffDays;
   };
 
-  const openGoogleCalendar = (sender: string, deadline: string, summary: string) => {
-    console.log('HomeScreen (iOS): User tapped "Add to calendar" button');
-    
-    const title = `Deadline: ${sender}`;
-    const formattedDate = `${deadline}/${deadline}`;
-    
-    const encodedTitle = encodeURIComponent(title);
-    const encodedDetails = encodeURIComponent(summary);
-    
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${formattedDate}&details=${encodedDetails}`;
-    
-    Linking.openURL(url)
-      .then(() => {
-        console.log('HomeScreen (iOS): Successfully opened Google Calendar');
-      })
-      .catch((err) => {
-        console.error('HomeScreen (iOS): Failed to open Google Calendar:', err);
-        ActionSheetIOS.showActionSheetWithOptions(
-          {
-            title: 'Error',
-            message: 'Failed to open Google Calendar',
-            options: ['OK'],
-            cancelButtonIndex: 0,
-          },
-          () => {}
-        );
-      });
-  };
-
   const copyToClipboard = () => {
-    console.log('HomeScreen (iOS): User tapped "Copy" button');
     Clipboard.setString(editableResponse);
     ActionSheetIOS.showActionSheetWithOptions(
       {
@@ -812,13 +710,6 @@ export default function HomeScreen() {
       },
       () => {}
     );
-  };
-
-  const closeResponseModal = () => {
-    console.log('HomeScreen (iOS): Closing response modal');
-    setShowResponseModal(false);
-    setGeneratedResponse('');
-    setEditableResponse('');
   };
 
   const renderRightActions = (docId: string) => {
@@ -853,11 +744,11 @@ export default function HomeScreen() {
     );
   }
 
+  // Parse analysis for selected document detail view
   const analysis = selectedDocument ? parseAnalysis(selectedDocument.analysis) : null;
   const senderName = analysis?.sender || 'Unknown Sender';
   const letterSubject = analysis?.summary_ua || 'No subject';
   const letterDate = selectedDocument ? formatDate(selectedDocument.created_at) : '';
-  const letterReference = selectedDocument ? String(selectedDocument.id).substring(0, 8) : '';
   const bsnDetected = analysis?.bsn_detected || false;
   const deadline = analysis?.deadline;
   const daysRemaining = deadline ? calculateDaysRemaining(deadline) : null;
@@ -901,8 +792,9 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
             const itemAnalysis = parseAnalysis(item.analysis);
-            const itemSenderText = itemAnalysis?.sender || 'Unknown';
-            const itemTitleText = itemAnalysis?.summary_ua || 'No title';
+            const hasAnalysis = !!item.analysis;
+            const itemSenderText = itemAnalysis?.sender || (hasAnalysis ? 'Unknown' : 'Wordt geanalyseerd...');
+            const itemTitleText = itemAnalysis?.summary_ua || (hasAnalysis ? 'No title' : 'Uw brief wordt geanalyseerd');
             const itemDateText = formatDate(item.created_at);
             const itemDeadlineText = itemAnalysis?.deadline;
             
@@ -918,8 +810,11 @@ export default function HomeScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.senderBadge}>
-                    <View style={styles.greenDot} />
+                    <View style={[styles.greenDot, !hasAnalysis && styles.orangeDot]} />
                     <Text style={styles.senderBadgeText}>{itemSenderText}</Text>
+                    {!hasAnalysis && (
+                      <ActivityIndicator size="small" color="#F59E0B" style={{ marginLeft: 6 }} />
+                    )}
                   </View>
                   <Text style={styles.letterTitle} numberOfLines={2}>
                     {itemTitleText}
@@ -954,7 +849,18 @@ export default function HomeScreen() {
         />
       </TouchableOpacity>
 
-      {/* Delete Modal */}
+      {/* Uploading Overlay */}
+      {uploading && (
+        <View style={styles.uploadingOverlay}>
+          <View style={styles.uploadingContent}>
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text style={styles.uploadingText}>Uw brief wordt geanalyseerd...</Text>
+            <Text style={styles.uploadingSubtext}>Even geduld alstublieft</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Delete Confirmation Modal */}
       <Modal
         visible={showDeleteModal}
         animationType="fade"
@@ -991,6 +897,165 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Document Detail Modal */}
+      <Modal
+        visible={!!selectedDocument}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeDocumentView}
+      >
+        <SafeAreaView style={styles.container} edges={['top']}>
+          {/* Detail Header */}
+          <View style={styles.detailHeader}>
+            <TouchableOpacity onPress={closeDocumentView} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <IconSymbol ios_icon_name="chevron.left" android_material_icon_name="arrow-back" size={24} color="#3B82F6" />
+            </TouchableOpacity>
+            <Text style={styles.detailHeaderTitle} numberOfLines={1}>{senderName}</Text>
+            <TouchableOpacity onPress={() => selectedDocument && confirmDeleteDocument(selectedDocument.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <IconSymbol ios_icon_name="trash" android_material_icon_name="delete" size={22} color="#DC2626" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.detailScrollView} contentContainerStyle={{ paddingBottom: 40 }}>
+            {/* Sender & Date Info */}
+            <View style={styles.detailInfoCard}>
+              <View style={styles.senderBadge}>
+                <View style={styles.greenDot} />
+                <Text style={styles.senderBadgeText}>{senderName}</Text>
+              </View>
+              <Text style={styles.detailDate}>{letterDate}</Text>
+              {bsnDetected && (
+                <View style={styles.bsnBadge}>
+                  <Text style={styles.bsnBadgeText}>🔒 BSN gedetecteerd en gemaskeerd</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Urgency & Deadline */}
+            {(urgency || deadline) && (
+              <View style={styles.detailInfoCard}>
+                {urgency && (
+                  <View style={[
+                    styles.urgencyBadge,
+                    urgency === 'high' ? styles.urgencyHigh : urgency === 'medium' ? styles.urgencyMedium : styles.urgencyLow,
+                  ]}>
+                    <Text style={styles.urgencyText}>
+                      {urgency === 'high' ? '🔴 Urgent' : urgency === 'medium' ? '🟡 Medium' : '🟢 Low'}
+                    </Text>
+                  </View>
+                )}
+                {deadline && daysRemaining !== null && (
+                  <View style={styles.deadlineRow}>
+                    <Text style={styles.deadlineLabel}>Deadline: {deadline}</Text>
+                    <Text style={[
+                      styles.daysRemainingText,
+                      daysRemaining <= 7 ? { color: '#DC2626' } : { color: '#16A34A' },
+                    ]}>
+                      {daysRemaining > 0 ? `${daysRemaining} dagen` : 'Verlopen!'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Tab Buttons */}
+            <View style={styles.tabRow}>
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'summary' && styles.tabButtonActive]}
+                onPress={() => setActiveTab('summary')}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'summary' && styles.tabButtonTextActive]}>📋 Samenvatting</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'action' && styles.tabButtonActive]}
+                onPress={() => setActiveTab('action')}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'action' && styles.tabButtonTextActive]}>✅ Actieplan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'response' && styles.tabButtonActive]}
+                onPress={() => setActiveTab('response')}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'response' && styles.tabButtonTextActive]}>✉️ Antwoord</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Tab Content */}
+            {!analysis ? (
+              <View style={styles.detailInfoCard}>
+                <ActivityIndicator size="small" color="#3B82F6" style={{ marginBottom: 12 }} />
+                <Text style={styles.analyzingText}>Uw brief wordt geanalyseerd...</Text>
+                <Text style={styles.analyzingSubtext}>Dit duurt meestal 15-30 seconden</Text>
+              </View>
+            ) : activeTab === 'summary' ? (
+              <View style={styles.detailInfoCard}>
+                <Text style={styles.sectionTitle}>Samenvatting</Text>
+                <Text style={styles.summaryText}>{letterSubject}</Text>
+              </View>
+            ) : activeTab === 'action' ? (
+              <View style={styles.detailInfoCard}>
+                <Text style={styles.sectionTitle}>Wat moet u doen?</Text>
+                {actionSteps.length > 0 ? (
+                  actionSteps.map((step, index) => (
+                    <View key={index} style={styles.stepRow}>
+                      <View style={styles.stepNumber}>
+                        <Text style={styles.stepNumberText}>{step.number || index + 1}</Text>
+                      </View>
+                      <View style={styles.stepContent}>
+                        <Text style={styles.stepTitle}>{step.title}</Text>
+                        <Text style={styles.stepDescription}>{step.description}</Text>
+                        {step.deadline && <Text style={styles.stepDeadline}>⏰ {step.deadline}</Text>}
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.noDataText}>Geen actiestappen beschikbaar</Text>
+                )}
+              </View>
+            ) : (
+              <View style={styles.detailInfoCard}>
+                <Text style={styles.sectionTitle}>Voorbeeldantwoord</Text>
+                {responseTemplate ? (
+                  <>
+                    <TextInput
+                      style={styles.responseInput}
+                      multiline
+                      value={editableResponse || responseTemplate}
+                      onChangeText={setEditableResponse}
+                      textAlignVertical="top"
+                    />
+                    <TouchableOpacity
+                      style={styles.copyButton}
+                      onPress={() => {
+                        if (!editableResponse) setEditableResponse(responseTemplate);
+                        copyToClipboard();
+                      }}
+                    >
+                      <Text style={styles.copyButtonText}>📋 Kopiëren</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <Text style={styles.noDataText}>Geen voorbeeldantwoord beschikbaar</Text>
+                )}
+                <Text style={styles.disclaimerText}>⚠️ Dit is een voorbeeld, geen juridisch advies.</Text>
+              </View>
+            )}
+
+            {/* Scanned Image */}
+            {selectedDocument?.image_url && (
+              <View style={styles.detailInfoCard}>
+                <Text style={styles.sectionTitle}>Gescande brief</Text>
+                <Image
+                  source={{ uri: selectedDocument.image_url }}
+                  style={styles.detailImage}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -1075,6 +1140,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     marginRight: 6,
   },
+  orangeDot: {
+    backgroundColor: '#F59E0B',
+  },
   senderBadgeText: {
     fontSize: 12,
     color: '#475569',
@@ -1132,6 +1200,41 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 8,
   },
+  // Uploading overlay
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  uploadingContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 36,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  uploadingText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginTop: 16,
+  },
+  uploadingSubtext: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  // Delete modal
   deleteModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1202,5 +1305,201 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  // Detail modal styles
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,42,0.06)',
+  },
+  detailHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 12,
+  },
+  detailScrollView: {
+    flex: 1,
+    padding: 20,
+  },
+  detailInfoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  detailDate: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 8,
+  },
+  bsnBadge: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  bsnBadgeText: {
+    fontSize: 12,
+    color: '#92400E',
+  },
+  urgencyBadge: {
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  urgencyHigh: { backgroundColor: '#FEE2E2' },
+  urgencyMedium: { backgroundColor: '#FEF3C7' },
+  urgencyLow: { backgroundColor: '#DCFCE7' },
+  urgencyText: { fontSize: 13, fontWeight: '600' },
+  deadlineRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  deadlineLabel: { fontSize: 14, color: '#475569' },
+  daysRemainingText: { fontSize: 14, fontWeight: '700' },
+  tabRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 8,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  tabButtonActive: {
+    backgroundColor: '#3B82F6',
+  },
+  tabButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  tabButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 12,
+  },
+  summaryText: {
+    fontSize: 15,
+    color: '#334155',
+    lineHeight: 24,
+  },
+  analyzingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#475569',
+    textAlign: 'center',
+  },
+  analyzingSubtext: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  stepNumberText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  stepDescription: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 20,
+  },
+  stepDeadline: {
+    fontSize: 12,
+    color: '#DC2626',
+    marginTop: 4,
+  },
+  responseInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 22,
+    minHeight: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+  },
+  copyButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  copyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  disclaimerText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  detailImage: {
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
+    marginTop: 8,
   },
 });
