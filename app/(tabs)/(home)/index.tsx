@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
@@ -10,7 +9,6 @@ import {
   Platform,
   Modal,
   ActivityIndicator,
-  Alert,
   Linking,
   Clipboard,
   ScrollView,
@@ -85,8 +83,6 @@ export default function HomeScreen() {
   
   const [documents, setDocuments] = useState<ScannedDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<ScannedDocument | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generatingResponse, setGeneratingResponse] = useState(false);
@@ -98,6 +94,8 @@ export default function HomeScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'action' | 'response'>('summary');
   const [editableResponse, setEditableResponse] = useState<string>('');
+  const [showScanOptionsModal, setShowScanOptionsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const FREE_SCAN_LIMIT = 3;
   
   // Custom modal state
@@ -317,30 +315,20 @@ export default function HomeScreen() {
   };
 
   const parseAnalysis = (analysisJson: AnalysisData | undefined): ParsedAnalysisContent | null => {
-    console.log('HomeScreen: Parsing analysis data:', JSON.stringify(analysisJson, null, 2));
-    
     if (!analysisJson || !analysisJson.content || analysisJson.content.length === 0) {
-      console.log('HomeScreen: No analysis data available');
       return null;
     }
 
     try {
       const textContent = analysisJson.content[0].text;
-      console.log('HomeScreen: Raw text content:', textContent);
-      
       const jsonMatch = textContent.match(/```json\s*([\s\S]*?)\s*```/);
       
       let jsonString = textContent;
       if (jsonMatch && jsonMatch[1]) {
         jsonString = jsonMatch[1].trim();
-        console.log('HomeScreen: Extracted JSON from markdown wrapper');
-      } else {
-        console.log('HomeScreen: No markdown wrapper found, parsing as-is');
       }
       
-      console.log('HomeScreen: JSON string to parse:', jsonString);
       const parsed = JSON.parse(jsonString);
-      console.log('HomeScreen: Successfully parsed analysis:', JSON.stringify(parsed, null, 2));
       return parsed;
     } catch (e) {
       console.error('HomeScreen: Failed to parse analysis JSON:', e);
@@ -349,42 +337,22 @@ export default function HomeScreen() {
   };
 
   const generateGoogleCalendarUrl = (sender: string, deadline: string, summary: string): string => {
-    console.log('HomeScreen: Generating Google Calendar URL');
-    console.log('HomeScreen: Sender:', sender);
-    console.log('HomeScreen: Deadline:', deadline);
-    console.log('HomeScreen: Summary:', summary);
-    
     const title = `Дедлайн: ${sender}`;
     const formattedDate = `${deadline}/${deadline}`;
-    
     const encodedTitle = encodeURIComponent(title);
     const encodedDetails = encodeURIComponent(summary);
-    
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${formattedDate}&details=${encodedDetails}`;
-    
-    console.log('HomeScreen: Generated calendar URL:', url);
-    return url;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodedTitle}&dates=${formattedDate}&details=${encodedDetails}`;
   };
 
   const openGoogleCalendar = (sender: string, deadline: string, summary: string) => {
-    console.log('HomeScreen: User tapped "Додати в календар" button');
-    
     const calendarUrl = generateGoogleCalendarUrl(sender, deadline, summary);
-    
-    Linking.openURL(calendarUrl)
-      .then(() => {
-        console.log('HomeScreen: Successfully opened Google Calendar');
-      })
-      .catch((err) => {
-        console.error('HomeScreen: Failed to open Google Calendar:', err);
-        showCustomAlert('Помилка', 'Не вдалося відкрити Google Calendar');
-      });
+    Linking.openURL(calendarUrl).catch((err) => {
+      console.error('HomeScreen: Failed to open Google Calendar:', err);
+      showCustomAlert('Помилка', 'Не вдалося відкрити Google Calendar');
+    });
   };
 
   const handleTemplatePress = async (templateType: string, analysis: ParsedAnalysisContent) => {
-    console.log('HomeScreen: User tapped template button:', templateType);
-    console.log('HomeScreen: Analysis data:', JSON.stringify(analysis, null, 2));
-    
     setGeneratingResponse(true);
     
     const webhookUrl = 'https://hook.eu1.make.com/w2ulfcq5936zqn4vwbjd6uy3g90aijuc';
@@ -399,38 +367,23 @@ export default function HomeScreen() {
       template_type: templateType,
     };
     
-    console.log('HomeScreen: Sending webhook request to:', webhookUrl);
-    console.log('HomeScreen: Request body:', JSON.stringify(requestBody, null, 2));
-    
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
       
-      console.log('HomeScreen: Webhook response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const responseData = await response.json();
-      console.log('HomeScreen: Webhook response data:', JSON.stringify(responseData, null, 2));
-      
       const content = responseData?.data?.content || responseData?.content;
       if (content && content[0]) {
-        const responseText = content[0].text;
-        console.log('HomeScreen: Extracted response text:', responseText);
-        
-        setGeneratedResponse(responseText);
-        setEditableResponse(responseText);
+        setGeneratedResponse(content[0].text);
+        setEditableResponse(content[0].text);
         setGeneratingResponse(false);
         setShowResponseModal(true);
       } else {
-        console.error('HomeScreen: Unexpected response structure');
         showCustomAlert('Помилка', 'Отримано некоректну відповідь від сервера');
         setGeneratingResponse(false);
       }
@@ -442,117 +395,79 @@ export default function HomeScreen() {
   };
 
   const generateSampleResponse = async (analysis: ParsedAnalysisContent) => {
-    console.log('HomeScreen: User tapped "Generate Response Letter" button');
-    console.log('HomeScreen: Generating sample response for analysis:', JSON.stringify(analysis, null, 2));
-    
     if (!selectedDocument) {
-      console.error('HomeScreen: No selected document');
       showCustomAlert('Помилка', 'Документ не вибрано');
       return;
     }
-    
-    console.log('HomeScreen: 🔍 CRITICAL - Using scan UUID:', selectedDocument.id);
-    console.log('HomeScreen: 🔍 CRITICAL - Scan ID type:', typeof selectedDocument.id);
     
     setGeneratingResponse(true);
     
     try {
       const { generateResponseLetter } = await import('@/utils/api');
-      
-      console.log('HomeScreen: 🔍 Calling generateResponseLetter with scanId:', selectedDocument.id);
       const { data, error } = await generateResponseLetter(selectedDocument.id, analysis);
       
       if (error) {
-        console.error('HomeScreen: Generate response API error:', error);
-        
         if (error.includes('Authentication')) {
-          showCustomAlert(
-            'Помилка автентифікації',
-            'Будь ласка, увійдіть в систему знову для використання цієї функції.'
-          );
+          showCustomAlert('Помилка автентифікації', 'Будь ласка, увійдіть в систему знову.');
         } else {
           showCustomAlert('Помилка', `Не вдалося згенерувати відповідь: ${error}`);
         }
-        
         setGeneratingResponse(false);
         return;
       }
       
       if (data && data.response) {
-        console.log('HomeScreen: Generated response text:', data.response);
         setGeneratedResponse(data.response);
         setEditableResponse(data.response);
         setGeneratingResponse(false);
         setShowResponseModal(true);
       } else {
-        console.error('HomeScreen: No response text in API response');
         showCustomAlert('Помилка', 'Отримано некоректну відповідь від сервера');
         setGeneratingResponse(false);
       }
     } catch (error: any) {
-      console.error('HomeScreen: Exception generating sample response:', error);
       showCustomAlert('Помилка', `Не вдалося згенерувати відповідь: ${error?.message || 'Невідома помилка'}`);
       setGeneratingResponse(false);
     }
   };
 
   const copyToClipboard = () => {
-    console.log('HomeScreen: User tapped "Копіювати" button');
     Clipboard.setString(editableResponse);
     const successMessage = translate('letterDetail', 'copiedSuccess', selectedLanguage);
     showCustomAlert('Успіх', successMessage);
   };
 
   const sendEmail = () => {
-    console.log('HomeScreen: User tapped "Надіслати email" button');
     const emailUrl = `mailto:?body=${encodeURIComponent(editableResponse)}`;
-    
-    Linking.openURL(emailUrl)
-      .then(() => {
-        console.log('HomeScreen: Successfully opened email app');
-      })
-      .catch((err) => {
-        console.error('HomeScreen: Failed to open email app:', err);
-        showCustomAlert('Помилка', 'Не вдалося відкрити додаток електронної пошти');
-      });
+    Linking.openURL(emailUrl).catch((err) => {
+      showCustomAlert('Помилка', 'Не вдалося відкрити додаток електронної пошти');
+    });
   };
 
   const closeResponseModal = () => {
-    console.log('HomeScreen: Closing response modal');
     setShowResponseModal(false);
     setGeneratedResponse('');
     setEditableResponse('');
   };
 
   const handleImageError = (docId: string) => {
-    console.log('HomeScreen: Image failed to load for document:', docId);
     setImageLoadErrors(prev => ({ ...prev, [docId]: true }));
   };
 
   const handleDetailImageError = () => {
-    console.log('HomeScreen: Detail image failed to load');
     setDetailImageError(true);
   };
 
   const requestCameraPermission = async () => {
-    console.log('HomeScreen: Requesting camera permission');
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
     if (status !== 'granted') {
-      console.log('HomeScreen: Camera permission denied');
-      showCustomAlert(
-        'Дозвіл потрібен',
-        'Будь ласка, надайте доступ до камери для сканування документів.'
-      );
+      showCustomAlert('Дозвіл потрібен', 'Будь ласка, надайте доступ до камери для сканування документів.');
       return false;
     }
-    
-    console.log('HomeScreen: Camera permission granted');
     return true;
   };
 
   const compressImage = async (uri: string): Promise<string | null> => {
-    console.log('HomeScreen: Starting image compression for URI:', uri);
     try {
       let currentCompress = 0.8;
       let compressedImage = await manipulateAsync(
@@ -561,38 +476,27 @@ export default function HomeScreen() {
         { compress: currentCompress, format: SaveFormat.JPEG, base64: true }
       );
 
-      if (!compressedImage.base64) {
-        console.error('HomeScreen: No base64 data from compression');
-        return null;
-      }
+      if (!compressedImage.base64) return null;
 
       const MAX_SIZE_BYTES = 1 * 1024 * 1024;
       let currentBase64 = compressedImage.base64;
       let estimatedSize = currentBase64.length * 0.75;
 
-      console.log('HomeScreen: Initial compressed size:', Math.round(estimatedSize), 'bytes');
-
       while (estimatedSize > MAX_SIZE_BYTES && currentCompress > 0.1) {
         currentCompress -= 0.1;
-        console.log('HomeScreen: Recompressing with quality:', currentCompress.toFixed(1));
-        
         const reCompressed = await manipulateAsync(
           uri,
           [{ resize: { width: 1200 } }],
           { compress: currentCompress, format: SaveFormat.JPEG, base64: true }
         );
-        
         if (reCompressed.base64) {
           currentBase64 = reCompressed.base64;
           estimatedSize = currentBase64.length * 0.75;
-          console.log('HomeScreen: New size:', Math.round(estimatedSize), 'bytes');
         } else {
           break;
         }
       }
 
-      const finalSize = Math.round(estimatedSize);
-      console.log('HomeScreen: Compression complete, final size:', finalSize, 'bytes');
       return currentBase64;
     } catch (error) {
       console.error('HomeScreen: Error in compressImage:', error);
@@ -601,14 +505,10 @@ export default function HomeScreen() {
   };
 
   const uploadToSupabase = async (base64: string): Promise<string | null> => {
-    console.log('HomeScreen: Starting Supabase upload');
     try {
       const fileExt = 'jpeg';
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `public/${fileName}`;
-
-      console.log('HomeScreen: Uploading to bucket "letters", path:', filePath);
-
       const arrayBuffer = decode(base64);
       
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -623,15 +523,8 @@ export default function HomeScreen() {
         return null;
       }
 
-      console.log('HomeScreen: Upload successful, getting public URL');
-
-      const { data: urlData } = supabase.storage
-        .from('letters')
-        .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
-      console.log('HomeScreen: Public URL obtained:', publicUrl);
-      return publicUrl;
+      const { data: urlData } = supabase.storage.from('letters').getPublicUrl(filePath);
+      return urlData.publicUrl;
     } catch (error) {
       console.error('HomeScreen: Exception in uploadToSupabase:', error);
       return null;
@@ -639,20 +532,12 @@ export default function HomeScreen() {
   };
 
   const saveToDatabase = async (imageUrl: string): Promise<boolean> => {
-    console.log('HomeScreen: ========== SAVING TO DATABASE ==========');
-    console.log('HomeScreen: Image URL:', imageUrl);
-    
     const languageToSave = selectedLanguage || DEFAULT_LANGUAGE;
-    console.log('HomeScreen: 🔍 CRITICAL - Language to save:', languageToSave);
-    console.log('HomeScreen: 🔍 CRITICAL - Language type:', typeof languageToSave);
     
     if (!user) {
-      console.error('HomeScreen: No user logged in, cannot save scan');
       showCustomAlert('Помилка', 'Ви повинні увійти в систему для збереження сканів');
       return false;
     }
-    
-    console.log('HomeScreen: 🔍 User ID:', user.id);
     
     const dataToInsert = { 
       image_url: imageUrl,
@@ -661,8 +546,6 @@ export default function HomeScreen() {
       user_id: user.id,
     };
     
-    console.log('HomeScreen: 🔍 CRITICAL - Full data object to insert:', JSON.stringify(dataToInsert, null, 2));
-    
     try {
       const { data: insertData, error: insertError } = await supabase
         .from('scans')
@@ -670,193 +553,86 @@ export default function HomeScreen() {
         .select();
 
       if (insertError) {
-        console.error('HomeScreen: ========== INSERT ERROR ==========');
-        console.error('Full error:', JSON.stringify(insertError, null, 2));
-        console.error('Message:', insertError.message);
-        console.error('Code:', insertError.code);
-        console.error('Details:', insertError.details);
-        console.error('Hint:', insertError.hint);
-        
         showCustomAlert(
           'Помилка збереження',
-          `Не вдалося зберегти запис.\n\nПовідомлення: ${insertError.message}\nКод: ${insertError.code || 'N/A'}\n\nПеревірте налаштування таблиці "scans" у Supabase.`
+          `Не вдалося зберегти запис.\n\nПовідомлення: ${insertError.message}\nКод: ${insertError.code || 'N/A'}`
         );
         return false;
       }
 
-      console.log('HomeScreen: ========== INSERT SUCCESS ==========');
-      console.log('HomeScreen: 🔍 CRITICAL - Data returned from Supabase:', JSON.stringify(insertData, null, 2));
-      
-      if (insertData && insertData.length > 0) {
-        const savedLanguage = insertData[0].language;
-        console.log('HomeScreen: 🔍 CRITICAL - Language saved in database:', savedLanguage);
-        if (savedLanguage !== languageToSave) {
-          console.error('HomeScreen: ⚠️ WARNING - Language mismatch!');
-          console.error(`  Expected: "${languageToSave}"`);
-          console.error(`  Got: "${savedLanguage}"`);
-        } else {
-          console.log('HomeScreen: ✅ Language saved correctly!');
-        }
-      }
-      
-      console.log('HomeScreen: Creating scan record in backend API');
       const backendUrl = Constants.expoConfig?.extra?.backendUrl;
-      
       if (backendUrl) {
         try {
-          console.log('HomeScreen: 🔍 Sending language to backend:', languageToSave);
-          const backendResponse = await fetch(`${backendUrl}/scans`, {
+          await fetch(`${backendUrl}/scans`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ language: languageToSave }),
           });
-          
-          if (backendResponse.ok) {
-            const backendData = await backendResponse.json();
-            console.log('HomeScreen: Backend scan created:', JSON.stringify(backendData, null, 2));
-          } else {
-            console.error('HomeScreen: Backend API error:', backendResponse.status);
-          }
         } catch (backendError: any) {
           console.error('HomeScreen: Backend API exception:', backendError?.message);
         }
-      } else {
-        console.warn('HomeScreen: Backend URL not configured, skipping backend API call');
       }
       
       return true;
     } catch (error: any) {
-      console.error('HomeScreen: ========== EXCEPTION IN SAVE ==========');
-      console.error('Exception:', JSON.stringify(error, null, 2));
-      
-      showCustomAlert(
-        'Помилка',
-        `Виняток при збереженні: ${error?.message || 'Невідома помилка'}`
-      );
+      showCustomAlert('Помилка', `Виняток при збереженні: ${error?.message || 'Невідома помилка'}`);
       return false;
     }
   };
 
   const handleImageSelection = async (pickerResult: ImagePicker.ImagePickerResult) => {
-    if (pickerResult.canceled) {
-      console.log('HomeScreen: Image selection cancelled by user');
-      return;
-    }
+    if (pickerResult.canceled) return;
 
     const uri = pickerResult.assets[0].uri;
-    console.log('HomeScreen: ========== STARTING IMAGE UPLOAD PROCESS ==========');
-    console.log('HomeScreen: Selected image URI:', uri);
-    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage at start of upload:', selectedLanguage);
-    
     setUploading(true);
 
     try {
-      console.log('HomeScreen: Step 1 - Compressing image');
       const compressedBase64 = await compressImage(uri);
-      
       if (!compressedBase64) {
-        console.error('HomeScreen: Compression failed');
         showCustomAlert('Помилка', 'Не вдалося стиснути зображення.');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen: Step 2 - Uploading to Supabase Storage');
       const imageUrl = await uploadToSupabase(compressedBase64);
-      
       if (!imageUrl) {
-        console.error('HomeScreen: Upload to storage failed');
         showCustomAlert('Помилка', 'Не вдалося завантажити зображення до сховища.');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen: Step 3 - Saving to database');
-      console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage before saveToDatabase call:', selectedLanguage);
       const saved = await saveToDatabase(imageUrl);
-      
       if (!saved) {
-        console.error('HomeScreen: Database save failed');
         setUploading(false);
         return;
       }
 
-      console.log('HomeScreen: ========== UPLOAD COMPLETE ==========');
       showCustomAlert('Успіх', 'Лист успішно завантажено!');
-      
-      console.log('HomeScreen: Refreshing scans list');
       await fetchScans();
       setUploading(false);
     } catch (error: any) {
-      console.error('HomeScreen: ========== UPLOAD PROCESS ERROR ==========');
-      console.error('Error:', JSON.stringify(error, null, 2));
-      
-      showCustomAlert(
-        'Помилка',
-        `Не вдалося завантажити зображення.\n\n${error?.message || 'Невідома помилка'}`
-      );
+      showCustomAlert('Помилка', `Не вдалося завантажити зображення.\n\n${error?.message || 'Невідома помилка'}`);
       setUploading(false);
     }
   };
 
-  const handleScanButtonPress = () => {
-    console.log('HomeScreen: User tapped scan button - showing image source options');
+  const scanDocument = async () => {
+    setShowScanOptionsModal(false);
     
     if (scanCount >= FREE_SCAN_LIMIT) {
-      console.log('HomeScreen: Free scan limit reached, showing paywall');
       setShowPaywall(true);
       return;
     }
     
-    Alert.alert(
-      'Select Image Source',
-      'Choose how you want to add your document',
-      [
-        {
-          text: 'Take Photo',
-          onPress: () => {
-            console.log('HomeScreen: User selected "Take Photo"');
-            scanDocument();
-          },
-        },
-        {
-          text: 'Choose from Gallery',
-          onPress: () => {
-            console.log('HomeScreen: User selected "Choose from Gallery"');
-            importFromGallery();
-          },
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            console.log('HomeScreen: User cancelled image source selection');
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const scanDocument = async () => {
-    console.log('HomeScreen: scanDocument called - launching camera');
-    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when scan button pressed:', selectedLanguage);
-    
     const hasPermission = await requestCameraPermission();
-    if (!hasPermission) {
-      return;
-    }
+    if (!hasPermission) return;
 
-    console.log('HomeScreen: Launching camera');
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
       });
-
       await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen: Error launching camera:', error);
@@ -864,8 +640,12 @@ export default function HomeScreen() {
   };
 
   const importFromGallery = async () => {
-    console.log('HomeScreen: importFromGallery called - launching gallery');
-    console.log('HomeScreen: 🔍 CRITICAL - selectedLanguage when gallery button pressed:', selectedLanguage);
+    setShowScanOptionsModal(false);
+    
+    if (scanCount >= FREE_SCAN_LIMIT) {
+      setShowPaywall(true);
+      return;
+    }
     
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -873,7 +653,6 @@ export default function HomeScreen() {
         allowsEditing: true,
         quality: 1,
       });
-
       await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen: Error launching gallery:', error);
@@ -881,63 +660,44 @@ export default function HomeScreen() {
   };
 
   const viewDocument = (doc: ScannedDocument) => {
-    console.log('HomeScreen: User tapped letter card, opening detail view for ID:', doc.id);
-    console.log('HomeScreen: Document language:', doc.language || 'null');
-    console.log('HomeScreen: Document has analysis:', !!doc.analysis);
     setSelectedDocument(doc);
     setDetailImageError(false);
     setActiveTab('summary');
   };
 
   const closeDocumentView = () => {
-    console.log('HomeScreen: Closing document view');
     setSelectedDocument(null);
     setDetailImageError(false);
     setActiveTab('summary');
   };
 
   const confirmDeleteDocument = (docId: string) => {
-    console.log('HomeScreen: User requested delete for document ID:', docId);
-    setDocumentToDelete(docId);
-    setShowDeleteModal(true);
-  };
-
-  const deleteDocument = async () => {
-    if (!documentToDelete) {
-      return;
-    }
-
-    console.log('HomeScreen: Deleting document ID:', documentToDelete);
-    
-    try {
-      const { error } = await supabase
-        .from('scans')
-        .delete()
-        .eq('id', documentToDelete);
-
-      if (error) {
-        console.error('HomeScreen: Delete error:', JSON.stringify(error, null, 2));
-        showCustomAlert('Помилка', 'Не вдалося видалити лист.');
-      } else {
-        console.log('HomeScreen: Document deleted successfully');
-        await fetchScans();
-      }
-    } catch (error) {
-      console.error('HomeScreen: Exception deleting document:', error);
-    }
-
-    setShowDeleteModal(false);
-    setDocumentToDelete(null);
-    
-    if (selectedDocument && selectedDocument.id === documentToDelete) {
-      setSelectedDocument(null);
-    }
-  };
-
-  const cancelDelete = () => {
-    console.log('HomeScreen: Delete cancelled');
-    setShowDeleteModal(false);
-    setDocumentToDelete(null);
+    showCustomAlert(
+      'Delete letter?',
+      'This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase.from('scans').delete().eq('id', docId);
+              if (error) {
+                showCustomAlert('Помилка', 'Не вдалося видалити лист.');
+              } else {
+                await fetchScans();
+                if (selectedDocument && selectedDocument.id === docId) {
+                  setSelectedDocument(null);
+                }
+              }
+            } catch (error) {
+              console.error('HomeScreen: Exception deleting document:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatDate = (dateString: string): string => {
@@ -951,15 +711,37 @@ export default function HomeScreen() {
 
   const handleSettingsPress = () => {
     console.log('HomeScreen: User tapped settings button');
-    router.push('/settings');
+    setShowSettingsModal(true);
   };
+
+  const handleLanguageChange = (lang: string) => {
+    console.log('HomeScreen: User changed language to:', lang);
+    setSelectedLanguage(lang);
+  };
+
+  const handleSignOut = async () => {
+    console.log('HomeScreen: User tapped sign out');
+    setShowSettingsModal(false);
+    await signOut();
+  };
+
+  const LANGUAGES = [
+    { code: 'uk', label: 'Українська', flag: '🇺🇦' },
+    { code: 'en', label: 'English', flag: '🇬🇧' },
+    { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
+    { code: 'pl', label: 'Polski', flag: '🇵🇱' },
+    { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+    { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { code: 'fr', label: 'Français', flag: '🇫🇷' },
+    { code: 'es', label: 'Español', flag: '🇪🇸' },
+    { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+  ];
 
   const calculateDaysRemaining = (deadline: string): number => {
     const deadlineDate = new Date(deadline);
     const today = new Date();
     const diffTime = deadlineDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const renderRightActions = (docId: string) => {
@@ -969,12 +751,7 @@ export default function HomeScreen() {
         onPress={() => confirmDeleteDocument(docId)}
         activeOpacity={0.7}
       >
-        <IconSymbol
-          ios_icon_name="trash"
-          android_material_icon_name="delete"
-          size={24}
-          color="#FFFFFF"
-        />
+        <IconSymbol ios_icon_name="trash" android_material_icon_name="delete" size={24} color="#FFFFFF" />
         <Text style={styles.deleteSwipeButtonText}>Delete</Text>
       </TouchableOpacity>
     );
@@ -1008,29 +785,38 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Top Bar */}
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => {
+            showCustomAlert(
+              'Sign Out?',
+              'Are you sure you want to sign out?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+              ]
+            );
+          }}
+          style={styles.headerBackButton}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <IconSymbol ios_icon_name="arrow.left" android_material_icon_name="arrow-back" size={22} color="#475569" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>{headerTitle}</Text>
         <TouchableOpacity
           onPress={handleSettingsPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.headerGearButton}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <IconSymbol
-            ios_icon_name="gear"
-            android_material_icon_name="settings"
-            size={24}
-            color={colors.textMuted}
-          />
+          <IconSymbol ios_icon_name="gear" android_material_icon_name="settings" size={22} color="#475569" />
         </TouchableOpacity>
       </View>
 
+      {/* Scan List */}
       {documents.length === 0 ? (
         <View style={styles.emptyStateContainer}>
-          <IconSymbol
-            ios_icon_name="camera"
-            android_material_icon_name="camera"
-            size={80}
-            color={colors.textMuted}
-          />
+          <IconSymbol ios_icon_name="camera" android_material_icon_name="camera" size={80} color={colors.textMuted} />
           <Text style={styles.emptyStateTitle}>{emptyStateTitle}</Text>
           <Text style={styles.emptyStateSubtitle}>{emptyStateSubtitle}</Text>
         </View>
@@ -1053,9 +839,20 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   style={styles.scanCard}
                   onPress={() => viewDocument(item)}
-                  onLongPress={() => confirmDeleteDocument(item.id)}
                   activeOpacity={0.7}
                 >
+                  {/* Visible delete button (works on desktop too) */}
+                  <TouchableOpacity
+                    style={styles.cardDeleteButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      confirmDeleteDocument(item.id);
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.cardDeleteIcon}>✕</Text>
+                  </TouchableOpacity>
+
                   <View style={styles.senderBadge}>
                     <View style={styles.greenDot} />
                     <Text style={styles.senderBadgeText}>{itemSenderText}</Text>
@@ -1079,19 +876,62 @@ export default function HomeScreen() {
         />
       )}
 
+      {/* Floating Scan Button — opens scan options */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={handleScanButtonPress}
+        onPress={() => setShowScanOptionsModal(true)}
         activeOpacity={0.8}
       >
-        <IconSymbol
-          ios_icon_name="camera.fill"
-          android_material_icon_name="camera"
-          size={28}
-          color="#FFFFFF"
-        />
+        <IconSymbol ios_icon_name="camera.fill" android_material_icon_name="camera" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
+      {/* ====== SCAN OPTIONS MODAL ====== */}
+      <Modal
+        visible={showScanOptionsModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowScanOptionsModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.scanOptionsOverlay}
+          activeOpacity={1}
+          onPress={() => setShowScanOptionsModal(false)}
+        >
+          <View style={styles.scanOptionsSheet}>
+            <Text style={styles.scanOptionsTitle}>Add a letter</Text>
+            
+            <TouchableOpacity style={styles.scanOptionButton} onPress={scanDocument} activeOpacity={0.7}>
+              <View style={[styles.scanOptionIcon, { backgroundColor: 'rgba(59,130,246,0.08)' }]}>
+                <Text style={{ fontSize: 22 }}>📷</Text>
+              </View>
+              <View style={styles.scanOptionTextContainer}>
+                <Text style={styles.scanOptionLabel}>Take Photo</Text>
+                <Text style={styles.scanOptionDescription}>Use camera to scan a letter</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.scanOptionButton} onPress={importFromGallery} activeOpacity={0.7}>
+              <View style={[styles.scanOptionIcon, { backgroundColor: 'rgba(16,185,129,0.08)' }]}>
+                <Text style={{ fontSize: 22 }}>🖼️</Text>
+              </View>
+              <View style={styles.scanOptionTextContainer}>
+                <Text style={styles.scanOptionLabel}>Choose from Gallery</Text>
+                <Text style={styles.scanOptionDescription}>Select an existing photo</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.scanOptionCancelButton}
+              onPress={() => setShowScanOptionsModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.scanOptionCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ====== ANALYSIS RESULT MODAL ====== */}
       <Modal
         visible={!!selectedDocument}
         animationType="slide"
@@ -1105,12 +945,7 @@ export default function HomeScreen() {
               style={styles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <IconSymbol
-                ios_icon_name="arrow.left"
-                android_material_icon_name="arrow-back"
-                size={28}
-                color="#475569"
-              />
+              <IconSymbol ios_icon_name="arrow.left" android_material_icon_name="arrow-back" size={28} color="#475569" />
             </TouchableOpacity>
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerSenderName}>{senderName}</Text>
@@ -1144,32 +979,14 @@ export default function HomeScreen() {
             )}
 
             <View style={styles.tabBar}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'summary' && styles.tabActive]}
-                onPress={() => setActiveTab('summary')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabText, activeTab === 'summary' && styles.tabTextActive]}>
-                  📋 Summary
-                </Text>
+              <TouchableOpacity style={[styles.tab, activeTab === 'summary' && styles.tabActive]} onPress={() => setActiveTab('summary')} activeOpacity={0.7}>
+                <Text style={[styles.tabText, activeTab === 'summary' && styles.tabTextActive]}>📋 Summary</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'action' && styles.tabActive]}
-                onPress={() => setActiveTab('action')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabText, activeTab === 'action' && styles.tabTextActive]}>
-                  🎯 Action
-                </Text>
+              <TouchableOpacity style={[styles.tab, activeTab === 'action' && styles.tabActive]} onPress={() => setActiveTab('action')} activeOpacity={0.7}>
+                <Text style={[styles.tabText, activeTab === 'action' && styles.tabTextActive]}>🎯 Action</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'response' && styles.tabActive]}
-                onPress={() => setActiveTab('response')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabText, activeTab === 'response' && styles.tabTextActive]}>
-                  ✉️ Response
-                </Text>
+              <TouchableOpacity style={[styles.tab, activeTab === 'response' && styles.tabActive]} onPress={() => setActiveTab('response')} activeOpacity={0.7}>
+                <Text style={[styles.tabText, activeTab === 'response' && styles.tabTextActive]}>✉️ Response</Text>
               </TouchableOpacity>
             </View>
 
@@ -1214,27 +1031,12 @@ export default function HomeScreen() {
                       <Text style={styles.iconEmoji}>⚡</Text>
                     </View>
                     <View style={styles.summaryCardContent}>
-                      <Text style={styles.summaryCardText}>
-                        Urgency: {urgency.charAt(0).toUpperCase() + urgency.slice(1)}
-                      </Text>
+                      <Text style={styles.summaryCardText}>Urgency: {urgency.charAt(0).toUpperCase() + urgency.slice(1)}</Text>
                       <Text style={styles.summaryCardSubtext}>Priority level</Text>
                     </View>
                   </View>
                 )}
 
-                <View style={styles.summaryCard}>
-                  <View style={[styles.iconContainer, { backgroundColor: 'rgba(124,58,237,0.06)' }]}>
-                    <Text style={styles.iconEmoji}>💡</Text>
-                  </View>
-                  <View style={styles.summaryCardContent}>
-                    <Text style={styles.summaryCardText}>
-                      Need help understanding terms like{' '}
-                      <Text style={styles.clickableTerm}>zorgtoeslag</Text> or{' '}
-                      <Text style={styles.clickableTerm}>bezwaar</Text>?
-                    </Text>
-                    <Text style={styles.summaryCardSubtext}>Tap highlighted terms for explanations</Text>
-                  </View>
-                </View>
               </View>
             )}
 
@@ -1242,75 +1044,65 @@ export default function HomeScreen() {
               <View style={styles.tabContent}>
                 {actionSteps.length > 0 ? (
                   <React.Fragment>
-                    {actionSteps.map((step, index) => {
-                      const stepNumber = step.number || index + 1;
-                      const stepTitle = step.title || '';
-                      const stepDescription = step.description || '';
-                      const stepLink = step.link || '';
-                      const stepDeadline = step.deadline || '';
-                      
-                      return (
-                        <View key={index} style={styles.actionStepCard}>
-                          <View style={styles.actionStepHeader}>
-                            <View style={styles.stepNumberCircle}>
-                              <Text style={styles.stepNumberText}>{stepNumber}</Text>
-                            </View>
-                            <View style={styles.actionStepContent}>
-                              <Text style={styles.actionStepTitle}>{stepTitle}</Text>
-                              <Text style={styles.actionStepDescription}>{stepDescription}</Text>
-                              {stepLink && (
-                                <TouchableOpacity
-                                  onPress={() => Linking.openURL(stepLink)}
-                                  activeOpacity={0.7}
-                                >
-                                  <Text style={styles.actionStepLink}>{stepLink}</Text>
-                                </TouchableOpacity>
-                              )}
-                              {stepDeadline && (
-                                <View style={styles.actionDeadlineBadge}>
-                                  <Text style={styles.actionDeadlineText}>Deadline: {stepDeadline}</Text>
-                                </View>
-                              )}
-                            </View>
+                    {actionSteps.map((step, index) => (
+                      <View key={index} style={styles.actionStepCard}>
+                        <View style={styles.actionStepHeader}>
+                          <View style={styles.stepNumberCircle}>
+                            <Text style={styles.stepNumberText}>{step.number || index + 1}</Text>
+                          </View>
+                          <View style={styles.actionStepContent}>
+                            <Text style={styles.actionStepTitle}>{step.title || ''}</Text>
+                            <Text style={styles.actionStepDescription}>{step.description || ''}</Text>
+                            {step.link ? (
+                              <TouchableOpacity onPress={() => Linking.openURL(step.link!)} activeOpacity={0.7}>
+                                <Text style={styles.actionStepLink}>{step.link}</Text>
+                              </TouchableOpacity>
+                            ) : null}
+                            {step.deadline ? (
+                              <View style={styles.actionDeadlineBadge}>
+                                <Text style={styles.actionDeadlineText}>Deadline: {step.deadline}</Text>
+                              </View>
+                            ) : null}
                           </View>
                         </View>
-                      );
-                    })}
+                      </View>
+                    ))}
                     {deadline && (
-                      <TouchableOpacity
-                        style={styles.addToCalendarButton}
-                        onPress={() => openGoogleCalendar(senderName, deadline, letterSubject)}
-                        activeOpacity={0.7}
-                      >
+                      <TouchableOpacity style={styles.addToCalendarButton} onPress={() => openGoogleCalendar(senderName, deadline, letterSubject)} activeOpacity={0.7}>
                         <Text style={styles.addToCalendarText}>📅 Add to calendar</Text>
                       </TouchableOpacity>
                     )}
                   </React.Fragment>
                 ) : analysis ? (
                   <React.Fragment>
+                    {/* Auto-generated basic steps from analysis data */}
                     <View style={styles.actionStepCard}>
                       <View style={styles.actionStepHeader}>
                         <View style={styles.stepNumberCircle}>
                           <Text style={styles.stepNumberText}>1</Text>
                         </View>
                         <View style={styles.actionStepContent}>
-                          <Text style={styles.actionStepTitle}>Read and understand the letter from {senderName}</Text>
-                          <Text style={styles.actionStepDescription}>Carefully review the content and identify key information.</Text>
+                          <Text style={styles.actionStepTitle}>Read and understand</Text>
+                          <Text style={styles.actionStepDescription}>
+                            Review the letter from {analysis.sender || 'the sender'}. See the Summary tab for a full explanation.
+                          </Text>
                         </View>
                       </View>
                     </View>
-
-                    {deadline && (
+                    
+                    {analysis.deadline && (
                       <View style={styles.actionStepCard}>
                         <View style={styles.actionStepHeader}>
-                          <View style={styles.stepNumberCircle}>
+                          <View style={[styles.stepNumberCircle, { backgroundColor: '#DC2626' }]}>
                             <Text style={styles.stepNumberText}>2</Text>
                           </View>
                           <View style={styles.actionStepContent}>
                             <Text style={styles.actionStepTitle}>Check the deadline</Text>
-                            <Text style={styles.actionStepDescription}>Make sure you respond before the deadline.</Text>
+                            <Text style={styles.actionStepDescription}>
+                              This letter has a deadline: {analysis.deadline}. Make sure to act before this date.
+                            </Text>
                             <View style={styles.actionDeadlineBadge}>
-                              <Text style={styles.actionDeadlineText}>Deadline: {deadline}</Text>
+                              <Text style={styles.actionDeadlineText}>⚠️ Deadline: {analysis.deadline}</Text>
                             </View>
                           </View>
                         </View>
@@ -1319,30 +1111,21 @@ export default function HomeScreen() {
 
                     <View style={styles.actionStepCard}>
                       <View style={styles.actionStepHeader}>
-                        <View style={styles.stepNumberCircle}>
-                          <Text style={styles.stepNumberText}>{deadline ? '3' : '2'}</Text>
+                        <View style={[styles.stepNumberCircle, { backgroundColor: '#10B981' }]}>
+                          <Text style={styles.stepNumberText}>{analysis.deadline ? '3' : '2'}</Text>
                         </View>
                         <View style={styles.actionStepContent}>
                           <Text style={styles.actionStepTitle}>Respond if needed</Text>
-                          <Text style={styles.actionStepDescription}>Go to the Response tab to generate a reply letter.</Text>
-                          <TouchableOpacity
-                            style={styles.goToResponseButton}
-                            onPress={() => setActiveTab('response')}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.goToResponseButtonText}>Go to Response tab →</Text>
-                          </TouchableOpacity>
+                          <Text style={styles.actionStepDescription}>
+                            Go to the Response tab to generate a sample reply letter in Dutch.
+                          </Text>
                         </View>
                       </View>
                     </View>
 
                     {deadline && (
-                      <TouchableOpacity
-                        style={styles.addToCalendarButton}
-                        onPress={() => openGoogleCalendar(senderName, deadline, letterSubject)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.addToCalendarText}>📅 Add to calendar</Text>
+                      <TouchableOpacity style={styles.addToCalendarButton} onPress={() => openGoogleCalendar(senderName, deadline, letterSubject)} activeOpacity={0.7}>
+                        <Text style={styles.addToCalendarText}>📅 Add deadline to calendar</Text>
                       </TouchableOpacity>
                     )}
                   </React.Fragment>
@@ -1360,60 +1143,48 @@ export default function HomeScreen() {
                       <Text style={styles.letterPreviewText}>{responseTemplate}</Text>
                     </View>
                     <View style={styles.responseButtonsRow}>
-                      <TouchableOpacity
-                        style={styles.copyButton}
-                        onPress={copyToClipboard}
-                        activeOpacity={0.7}
-                      >
+                      <TouchableOpacity style={styles.copyButton} onPress={copyToClipboard} activeOpacity={0.7}>
                         <Text style={styles.copyButtonText}>Copy</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.editButton}
-                        onPress={() => {
-                          setEditableResponse(responseTemplate);
-                          setShowResponseModal(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
+                      <TouchableOpacity style={styles.editButton} onPress={() => { setEditableResponse(responseTemplate); setShowResponseModal(true); }} activeOpacity={0.7}>
                         <Text style={styles.editButtonText}>Edit</Text>
                       </TouchableOpacity>
                     </View>
                     <View style={styles.disclaimer}>
                       <Text style={styles.disclaimerText}>
                         This is a template. Always review and customize before sending. For legal advice, visit{' '}
-                        <Text
-                          style={styles.disclaimerLink}
-                          onPress={() => Linking.openURL('https://www.juridischloket.nl')}
-                        >
-                          Juridisch Loket
-                        </Text>
-                        .
+                        <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.juridischloket.nl')}>Juridisch Loket</Text>.
                       </Text>
                     </View>
                   </React.Fragment>
                 ) : (
-                  <View style={styles.emptyResponseContainer}>
-                    <Text style={styles.emptyResponseIcon}>✉️</Text>
-                    <Text style={styles.emptyResponseTitle}>Response letter</Text>
-                    <Text style={styles.emptyResponseDescription}>
-                      Generate a professional response letter based on the analysis of this document.
+                  <View style={styles.generateContainer}>
+                    <View style={[styles.iconContainer, { backgroundColor: 'rgba(59,130,246,0.06)', width: 56, height: 56, borderRadius: 16, marginBottom: 12 }]}>
+                      <Text style={{ fontSize: 28 }}>✉️</Text>
+                    </View>
+                    <Text style={styles.generateTitle}>Response letter</Text>
+                    <Text style={styles.generateDescription}>
+                      Generate a sample response letter in correct Dutch, ready to customize and send.
                     </Text>
-                    {generatingResponse ? (
-                      <View style={styles.generatingContainer}>
-                        <ActivityIndicator size="large" color="#3B82F6" />
-                        <Text style={styles.generatingText}>Generating response...</Text>
-                      </View>
-                    ) : (
-                      analysis && (
-                        <TouchableOpacity
-                          style={styles.generateResponseButton}
-                          onPress={() => generateSampleResponse(analysis)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.generateResponseButtonText}>Generate Response Letter</Text>
-                        </TouchableOpacity>
-                      )
-                    )}
+                    <TouchableOpacity
+                      style={styles.generateButton}
+                      onPress={() => analysis && generateSampleResponse(analysis)}
+                      activeOpacity={0.7}
+                      disabled={generatingResponse || !analysis}
+                    >
+                      {generatingResponse ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.generateButtonText}>Generate Response Letter</Text>
+                      )}
+                    </TouchableOpacity>
+                    <View style={[styles.disclaimer, { marginTop: 12 }]}>
+                      <Text style={styles.disclaimerText}>
+                        Generated letters are examples only, not legal advice. Visit{' '}
+                        <Text style={styles.disclaimerLink} onPress={() => Linking.openURL('https://www.juridischloket.nl')}>Juridisch Loket</Text>{' '}
+                        for legal help.
+                      </Text>
+                    </View>
                   </View>
                 )}
               </View>
@@ -1422,55 +1193,82 @@ export default function HomeScreen() {
         </SafeAreaView>
       </Modal>
 
-      <Modal
-        visible={showResponseModal}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={closeResponseModal}
-      >
+      {/* ====== RESPONSE EDIT MODAL ====== */}
+      <Modal visible={showResponseModal} animationType="slide" transparent={false} onRequestClose={closeResponseModal}>
         <SafeAreaView style={styles.responseModalContainer} edges={['top']}>
           <View style={styles.responseModalHeader}>
-            <TouchableOpacity
-              onPress={closeResponseModal}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <IconSymbol
-                ios_icon_name="xmark"
-                android_material_icon_name="close"
-                size={24}
-                color="#475569"
-              />
+            <TouchableOpacity onPress={closeResponseModal} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <IconSymbol ios_icon_name="xmark" android_material_icon_name="close" size={24} color="#475569" />
             </TouchableOpacity>
             <Text style={styles.responseModalTitle}>Edit Response</Text>
             <View style={{ width: 24 }} />
           </View>
           <ScrollView style={styles.responseModalScroll} contentContainerStyle={styles.responseModalScrollContent}>
-            <TextInput
-              style={styles.responseTextInput}
-              value={editableResponse}
-              onChangeText={setEditableResponse}
-              multiline
-              textAlignVertical="top"
-            />
+            <TextInput style={styles.responseTextInput} value={editableResponse} onChangeText={setEditableResponse} multiline textAlignVertical="top" />
           </ScrollView>
           <View style={styles.responseModalButtons}>
-            <TouchableOpacity
-              style={styles.responseModalCopyButton}
-              onPress={copyToClipboard}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.responseModalCopyButton} onPress={copyToClipboard} activeOpacity={0.7}>
               <Text style={styles.responseModalCopyButtonText}>Copy</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
       </Modal>
 
-      <Modal
-        visible={customModal.visible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setCustomModal(prev => ({ ...prev, visible: false }))}
-      >
+      {/* ====== SETTINGS MODAL ====== */}
+      <Modal visible={showSettingsModal} animationType="slide" transparent={false} onRequestClose={() => setShowSettingsModal(false)}>
+        <SafeAreaView style={styles.settingsContainer} edges={['top']}>
+          <View style={styles.settingsHeader}>
+            <TouchableOpacity
+              onPress={() => setShowSettingsModal(false)}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol ios_icon_name="arrow.left" android_material_icon_name="arrow-back" size={28} color="#475569" />
+            </TouchableOpacity>
+            <Text style={styles.settingsHeaderTitle}>Settings</Text>
+            <View style={{ width: 44 }} />
+          </View>
+          
+          <ScrollView style={styles.settingsScroll} contentContainerStyle={styles.settingsScrollContent}>
+            <Text style={styles.settingsSectionTitle}>Language</Text>
+            <View style={styles.languageGrid}>
+              {LANGUAGES.map((lang) => (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={[
+                    styles.languageCard,
+                    selectedLanguage === lang.code && styles.languageCardActive,
+                  ]}
+                  onPress={() => handleLanguageChange(lang.code)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.languageFlag}>{lang.flag}</Text>
+                  <Text style={[
+                    styles.languageLabel,
+                    selectedLanguage === lang.code && styles.languageLabelActive,
+                  ]}>
+                    {lang.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.settingsSectionTitle, { marginTop: 32 }]}>About</Text>
+            <View style={styles.aboutCard}>
+              <Text style={styles.aboutAppName}>DocuScan</Text>
+              <Text style={styles.aboutVersion}>Version 1.0</Text>
+              <Text style={styles.aboutDescription}>AI-powered letter assistant for newcomers in the Netherlands</Text>
+            </View>
+
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.7}>
+              <Text style={styles.signOutButtonText}>Sign Out</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* ====== CUSTOM ALERT MODAL ====== */}
+      <Modal visible={customModal.visible} animationType="fade" transparent={true} onRequestClose={() => setCustomModal(prev => ({ ...prev, visible: false }))}>
         <View style={styles.deleteModalOverlay}>
           <View style={styles.deleteModalContent}>
             <Text style={styles.deleteModalTitle}>{customModal.title}</Text>
@@ -1479,26 +1277,14 @@ export default function HomeScreen() {
               {customModal.buttons && customModal.buttons.map((button, index) => (
                 <TouchableOpacity
                   key={index}
-                  style={
-                    button.style === 'destructive'
-                      ? styles.deleteModalConfirmButton
-                      : button.style === 'cancel'
-                      ? styles.deleteModalCancelButton
-                      : styles.deleteModalCancelButton
-                  }
+                  style={button.style === 'destructive' ? styles.deleteModalConfirmButton : styles.deleteModalCancelButton}
                   onPress={() => {
                     setCustomModal(prev => ({ ...prev, visible: false }));
                     if (button.onPress) button.onPress();
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={
-                      button.style === 'destructive'
-                        ? styles.deleteModalConfirmText
-                        : styles.deleteModalCancelText
-                    }
-                  >
+                  <Text style={button.style === 'destructive' ? styles.deleteModalConfirmText : styles.deleteModalCancelText}>
                     {button.text}
                   </Text>
                 </TouchableOpacity>
@@ -1526,16 +1312,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(15,23,42,0.06)',
   },
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerGearButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#0F172A',
+    flex: 1,
+    textAlign: 'center',
   },
   emptyStateContainer: {
     flex: 1,
@@ -1571,6 +1375,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 3,
     elevation: 1,
+    position: 'relative',
+  },
+  cardDeleteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(15,23,42,0.04)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  cardDeleteIcon: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
   senderBadge: {
     flexDirection: 'row',
@@ -1592,18 +1414,20 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   senderBadgeText: {
-    fontSize: 12,
-    color: '#475569',
+    fontSize: 13,
+    color: '#334155',
+    fontWeight: '500',
   },
   letterTitle: {
     fontSize: 15,
     fontWeight: '600',
     color: '#0F172A',
     marginBottom: 6,
+    paddingRight: 32,
   },
   dateText: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#64748B',
   },
   deadlineBadge: {
     backgroundColor: 'rgba(220,38,38,0.06)',
@@ -1648,6 +1472,71 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 8,
   },
+  /* Scan Options Modal */
+  scanOptionsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  scanOptionsSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingHorizontal: 20,
+  },
+  scanOptionsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  scanOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+  },
+  scanOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  scanOptionTextContainer: {
+    flex: 1,
+  },
+  scanOptionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  scanOptionDescription: {
+    fontSize: 13,
+    color: '#94A3B8',
+  },
+  scanOptionCancelButton: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  scanOptionCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  /* Detail Modal */
   detailContainer: {
     flex: 1,
     backgroundColor: '#F8FAFC',
@@ -1799,13 +1688,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   summaryCardText: {
-    fontSize: 14,
-    color: '#0F172A',
-    lineHeight: 21.7,
+    fontSize: 15,
+    color: '#1E293B',
+    lineHeight: 23,
+    fontWeight: '400',
   },
   summaryCardSubtext: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#64748B',
     marginTop: 4,
   },
   clickableTerm: {
@@ -1854,9 +1744,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   actionStepDescription: {
-    fontSize: 13,
-    color: '#475569',
-    lineHeight: 20.15,
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 21,
   },
   actionStepLink: {
     fontSize: 13,
@@ -1875,19 +1765,6 @@ const styles = StyleSheet.create({
   actionDeadlineText: {
     fontSize: 11,
     color: '#DC2626',
-  },
-  goToResponseButton: {
-    backgroundColor: 'rgba(59,130,246,0.06)',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  goToResponseButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#3B82F6',
   },
   addToCalendarButton: {
     backgroundColor: '#FFFFFF',
@@ -1914,9 +1791,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   letterPreviewText: {
-    fontSize: 13,
-    color: '#475569',
-    lineHeight: 22.1,
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 22,
   },
   responseButtonsRow: {
     flexDirection: 'row',
@@ -1960,9 +1837,9 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   disclaimerText: {
-    fontSize: 11,
-    color: '#94A3B8',
-    lineHeight: 17.6,
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
   },
   disclaimerLink: {
     color: '#7C3AED',
@@ -1974,53 +1851,42 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
   },
-  emptyResponseContainer: {
+  generateContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingTop: 24,
+    paddingHorizontal: 8,
   },
-  emptyResponseIcon: {
-    fontSize: 60,
-    marginBottom: 16,
-  },
-  emptyResponseTitle: {
-    fontSize: 20,
+  generateTitle: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 8,
   },
-  emptyResponseDescription: {
+  generateDescription: {
     fontSize: 14,
     color: '#475569',
     textAlign: 'center',
-    lineHeight: 22.4,
-    marginBottom: 24,
+    lineHeight: 21,
+    marginBottom: 20,
+    maxWidth: 300,
   },
-  generatingContainer: {
+  generateButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  generatingText: {
-    fontSize: 14,
-    color: '#475569',
-    marginTop: 12,
-  },
-  generateResponseButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    width: '100%',
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 4,
+    minHeight: 52,
   },
-  generateResponseButtonText: {
-    fontSize: 14,
+  generateButtonText: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -2152,5 +2018,113 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  /* Settings Modal */
+  settingsContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,42,0.06)',
+  },
+  settingsHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  settingsScroll: {
+    flex: 1,
+  },
+  settingsScrollContent: {
+    padding: 20,
+    paddingBottom: 60,
+  },
+  settingsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  languageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  languageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 8,
+    minWidth: '47%',
+    flexGrow: 1,
+  },
+  languageCardActive: {
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59,130,246,0.04)',
+  },
+  languageFlag: {
+    fontSize: 20,
+  },
+  languageLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#475569',
+  },
+  languageLabelActive: {
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  aboutCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,42,0.06)',
+    borderRadius: 14,
+    padding: 20,
+    alignItems: 'center',
+  },
+  aboutAppName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  aboutVersion: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginBottom: 8,
+  },
+  aboutDescription: {
+    fontSize: 13,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  signOutButton: {
+    marginTop: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(220,38,38,0.2)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  signOutButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#DC2626',
   },
 });
