@@ -34,7 +34,7 @@ export default function LoginScreen() {
   useEffect(() => {
     console.log('LoginScreen: Refreshing language from storage');
     refreshLanguage();
-  }, []);
+  }, [refreshLanguage]);
 
   // If user is already logged in, they'll be redirected by _layout.tsx
   useEffect(() => {

@@ -103,7 +103,7 @@ export default function HomeScreen() {
     visible: boolean;
     title: string;
     message: string;
-    buttons?: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>;
+    buttons?: { text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }[];
   }>({
     visible: false,
     title: '',
@@ -114,7 +114,7 @@ export default function HomeScreen() {
   const showCustomAlert = (
     title: string,
     message: string,
-    buttons?: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+    buttons?: { text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }[]
   ) => {
     setCustomModal({
       visible: true,

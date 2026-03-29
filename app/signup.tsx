@@ -35,7 +35,7 @@ export default function SignupScreen() {
   useEffect(() => {
     console.log('SignupScreen: Refreshing language from storage');
     refreshLanguage();
-  }, []);
+  }, [refreshLanguage]);
 
   console.log('SignupScreen: Current language:', selectedLanguage);
 
