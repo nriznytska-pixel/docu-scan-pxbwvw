@@ -16,6 +16,7 @@ import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
@@ -38,7 +39,10 @@ export default function SettingsScreen() {
     console.log('SettingsScreen: User confirmed logout');
     setShowLogoutModal(false);
     await signOut();
-    console.log('SettingsScreen: Logout complete');
+    await AsyncStorage.removeItem('is_guest');
+    await AsyncStorage.removeItem('guest_scan_count');
+    console.log('SettingsScreen: Logout complete, cleared guest flags, redirecting to signup');
+    router.replace('/signup');
   };
 
   const cancelLogout = () => {
