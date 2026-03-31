@@ -17,6 +17,7 @@ import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translate } from '@/constants/translations';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SignupScreen() {
   console.log('SignupScreen: Component rendered');
@@ -78,6 +79,15 @@ export default function SignupScreen() {
   const goToLogin = () => {
     console.log('SignupScreen: User tapped back button / sign in link');
     router.back();
+  };
+
+  const handleContinueAsGuest = async () => {
+    console.log('SignupScreen: User tapped continue without account');
+    try {
+      await AsyncStorage.setItem('is_guest', 'true');
+      console.log('SignupScreen: Guest flag set in AsyncStorage');
+    } catch {}
+    router.replace('/(tabs)/(home)');
   };
 
   const titleText = translate('signup', 'title', selectedLanguage);
@@ -170,6 +180,10 @@ export default function SignupScreen() {
                 <Text style={styles.loginLinkText}>{signInLinkText}</Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity style={styles.guestButton} onPress={handleContinueAsGuest} activeOpacity={0.7}>
+              <Text style={styles.guestButtonText}>Continue without account</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -268,5 +282,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
+  },
+  guestButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  guestButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
 });
