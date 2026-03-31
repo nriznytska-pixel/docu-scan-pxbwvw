@@ -27,6 +27,7 @@ export default function SettingsScreen() {
   const { signOut, user } = useAuth();
   
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   console.log('SettingsScreen: Current selectedLanguage:', selectedLanguage);
   console.log('SettingsScreen: Current user:', user?.email || 'null');
@@ -38,15 +39,23 @@ export default function SettingsScreen() {
 
   const confirmLogout = async () => {
     console.log('SettingsScreen: User confirmed logout');
+    setIsLoggingOut(true);
     setShowLogoutModal(false);
+
+    // Clear guest/cache data first
+    await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
+
+    // Navigate FIRST before signOut triggers auth state change in _layout
+    console.log('SettingsScreen: Navigating to login before signOut');
+    router.replace('/login');
+
+    // Then sign out (auth state change will happen after navigation)
     try {
       await supabase.auth.signOut();
-    } catch {}
-    await AsyncStorage.removeItem('is_guest');
-    await AsyncStorage.removeItem('guest_scan_count');
-    await AsyncStorage.removeItem('selectedLanguage');
-    console.log('SettingsScreen: Logout complete, navigating to language-select');
-    router.replace('/language-select');
+      console.log('SettingsScreen: signOut complete');
+    } catch (e) {
+      console.log('SettingsScreen: signOut error (ignored):', e);
+    }
   };
 
   const cancelLogout = () => {
@@ -144,11 +153,12 @@ export default function SettingsScreen() {
           {/* Logout Section */}
           <View style={styles.logoutSection}>
             <TouchableOpacity
-              style={styles.logoutButton}
+              style={[styles.logoutButton, isLoggingOut && { opacity: 0.6 }]}
               onPress={handleLogoutPress}
               activeOpacity={0.8}
+              disabled={isLoggingOut}
             >
-              <Text style={styles.logoutButtonText}>{logoutButtonText}</Text>
+              <Text style={styles.logoutButtonText}>{isLoggingOut ? 'Signing out...' : logoutButtonText}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
