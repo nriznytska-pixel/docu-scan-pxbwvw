@@ -27,15 +27,22 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const [hasLanguage, setHasLanguage] = useState<boolean | null>(null);
+  const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
   const checkLanguageSelection = async () => {
     try {
-      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
+      const [savedLanguage, guestFlag] = await Promise.all([
+        AsyncStorage.getItem(LANGUAGE_STORAGE_KEY),
+        AsyncStorage.getItem('is_guest'),
+      ]);
       console.log('RootLayoutNav: Checking language selection:', savedLanguage);
+      console.log('RootLayoutNav: Checking guest flag:', guestFlag);
       setHasLanguage(!!savedLanguage);
+      setIsGuest(guestFlag === 'true');
     } catch (error) {
-      console.error('RootLayoutNav: Error checking language:', error);
+      console.error('RootLayoutNav: Error checking language/guest:', error);
       setHasLanguage(false);
+      setIsGuest(false);
     }
   };
 
@@ -50,8 +57,8 @@ function RootLayoutNav() {
   }, [segments]);
 
   useEffect(() => {
-    if (loading || hasLanguage === null) {
-      console.log('RootLayoutNav: Auth or language loading, waiting...');
+    if (loading || hasLanguage === null || isGuest === null) {
+      console.log('RootLayoutNav: Auth or language or guest loading, waiting...');
       return;
     }
 
@@ -67,20 +74,20 @@ function RootLayoutNav() {
       return;
     }
 
-    // Priority 2: User is logged in and has language -> go to home
-    if (user && hasLanguage && !inAuthGroup) {
-      console.log('RootLayoutNav: User logged in with language, redirecting to home');
+    // Priority 2: User is logged in (or is a guest) and has language -> go to home
+    if ((user || isGuest) && hasLanguage && !inAuthGroup) {
+      console.log('RootLayoutNav: User/guest with language, redirecting to home');
       router.replace('/(tabs)/(home)');
       return;
     }
 
-    // Priority 3: No user but trying to access protected routes -> go to login
-    if (!user && inAuthGroup) {
-      console.log('RootLayoutNav: No user in protected route, redirecting to login');
+    // Priority 3: No user and not a guest but trying to access protected routes -> go to login
+    if (!user && !isGuest && inAuthGroup) {
+      console.log('RootLayoutNav: No user and not a guest in protected route, redirecting to login');
       router.replace('/login');
       return;
     }
-  }, [user, loading, segments, router, hasLanguage]);
+  }, [user, loading, segments, router, hasLanguage, isGuest]);
 
   return (
     <Stack
