@@ -114,12 +114,13 @@ export default function LoginScreen() {
   const handleContinueAsGuest = async () => {
     console.log('LoginScreen: User tapped "Continue without account"');
     try {
-      await AsyncStorage.setItem('guest_scan_count', '0');
-      console.log('LoginScreen: guest_scan_count initialized to 0');
+      await AsyncStorage.setItem('is_guest', 'true');
+      console.log('LoginScreen: is_guest flag set to "true"');
     } catch (err) {
-      console.error('LoginScreen: Failed to initialize guest_scan_count:', err);
+      console.error('LoginScreen: Failed to set is_guest flag:', err);
     }
-    router.replace('/(tabs)/(home)');
+    console.log('LoginScreen: Navigating to home screen as guest');
+    router.replace('/(tabs)');
   };
 
   const titleText = translate('login', 'title', selectedLanguage);
