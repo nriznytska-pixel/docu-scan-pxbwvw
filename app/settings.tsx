@@ -41,7 +41,8 @@ export default function SettingsScreen() {
     await AsyncStorage.removeItem('is_guest');
     await AsyncStorage.removeItem('guest_scan_count');
     await signOut();
-    console.log('SettingsScreen: Logout complete, cleared guest flags, letting _layout handle redirect');
+    console.log('SettingsScreen: Logout complete, navigating directly to signup');
+    router.replace('/signup');
   };
 
   const cancelLogout = () => {
