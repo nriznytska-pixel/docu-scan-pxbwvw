@@ -646,6 +646,15 @@ export default function HomeScreen() {
                 router.push('/login');
               },
             },
+            {
+              text: 'Sign Out',
+              onPress: async () => {
+                console.log('HomeScreen: Guest tapped Sign Out from limit prompt');
+                await AsyncStorage.removeItem('is_guest');
+                await AsyncStorage.removeItem(GUEST_SCAN_COUNT_KEY);
+                router.replace('/signup');
+              },
+            },
           ]
         );
         return false;
