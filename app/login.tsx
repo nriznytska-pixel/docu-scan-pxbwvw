@@ -211,7 +211,6 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.guestButton}
               onPress={handleContinueAsGuest}
-              disabled={loading}
               activeOpacity={0.7}
             >
               <Text style={styles.guestButtonText}>Continue without account</Text>
@@ -331,17 +330,15 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   guestButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 16,
-    backgroundColor: 'transparent',
   },
   guestButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#888888',
+    color: '#FFFFFF',
   },
 });
