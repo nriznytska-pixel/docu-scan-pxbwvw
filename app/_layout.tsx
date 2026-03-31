@@ -57,6 +57,13 @@ function RootLayoutNav() {
   }, [segments]);
 
   useEffect(() => {
+    if (user === null) {
+      console.log('RootLayoutNav: user signed out, re-reading AsyncStorage to refresh isGuest');
+      checkLanguageSelection();
+    }
+  }, [user]);
+
+  useEffect(() => {
     if (loading || hasLanguage === null || isGuest === null) {
       console.log('RootLayoutNav: Auth or language or guest loading, waiting...');
       return;
