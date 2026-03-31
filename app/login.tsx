@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -110,6 +111,17 @@ export default function LoginScreen() {
     router.push('/language-select');
   };
 
+  const handleContinueAsGuest = async () => {
+    console.log('LoginScreen: User tapped "Continue without account"');
+    try {
+      await AsyncStorage.setItem('guest_scan_count', '0');
+      console.log('LoginScreen: guest_scan_count initialized to 0');
+    } catch (err) {
+      console.error('LoginScreen: Failed to initialize guest_scan_count:', err);
+    }
+    router.replace('/(tabs)/(home)');
+  };
+
   const titleText = translate('login', 'title', selectedLanguage);
   const subtitleText = translate('login', 'subtitle', selectedLanguage);
   const emailPlaceholder = translate('login', 'email', selectedLanguage);
@@ -194,6 +206,15 @@ export default function LoginScreen() {
                 <Text style={styles.signupLinkText}>{signUpLinkText}</Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity
+              style={styles.guestButton}
+              onPress={handleContinueAsGuest}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.guestButtonText}>Continue without account</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -307,5 +328,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
     marginLeft: 4,
+  },
+  guestButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+    backgroundColor: 'transparent',
+  },
+  guestButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#888888',
   },
 });

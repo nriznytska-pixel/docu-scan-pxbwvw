@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { decode } from 'base64-arraybuffer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/utils/supabase';
@@ -27,6 +28,9 @@ import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
+
+const GUEST_SCAN_COUNT_KEY = 'guest_scan_count';
+const GUEST_FREE_SCAN_LIMIT = 1;
 
 interface AnalysisData {
   content: [{ text: string }];
@@ -616,10 +620,63 @@ export default function HomeScreen() {
     }
   };
 
+  const checkGuestScanLimit = async (): Promise<boolean> => {
+    if (user) return true; // logged-in users bypass guest limit
+    try {
+      const raw = await AsyncStorage.getItem(GUEST_SCAN_COUNT_KEY);
+      const count = raw !== null ? parseInt(raw, 10) : 0;
+      console.log('HomeScreen: Guest scan count:', count);
+      if (count >= GUEST_FREE_SCAN_LIMIT) {
+        console.log('HomeScreen: Guest scan limit reached, showing account prompt');
+        showCustomAlert(
+          'Create an account to continue',
+          'You have used your free scan. Sign up or log in to scan more letters.',
+          [
+            {
+              text: 'Sign Up',
+              onPress: () => {
+                console.log('HomeScreen: Guest tapped Sign Up from limit prompt');
+                router.push('/signup');
+              },
+            },
+            {
+              text: 'Log In',
+              onPress: () => {
+                console.log('HomeScreen: Guest tapped Log In from limit prompt');
+                router.push('/login');
+              },
+            },
+          ]
+        );
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('HomeScreen: Error checking guest scan limit:', err);
+      return true; // allow on error
+    }
+  };
+
+  const incrementGuestScanCount = async () => {
+    if (user) return;
+    try {
+      const raw = await AsyncStorage.getItem(GUEST_SCAN_COUNT_KEY);
+      const count = raw !== null ? parseInt(raw, 10) : 0;
+      await AsyncStorage.setItem(GUEST_SCAN_COUNT_KEY, String(count + 1));
+      console.log('HomeScreen: Guest scan count incremented to', count + 1);
+    } catch (err) {
+      console.error('HomeScreen: Error incrementing guest scan count:', err);
+    }
+  };
+
   const scanDocument = async () => {
     setShowScanOptionsModal(false);
-    
-    if (scanCount >= FREE_SCAN_LIMIT) {
+    console.log('HomeScreen: User tapped Take Photo');
+
+    if (!user) {
+      const allowed = await checkGuestScanLimit();
+      if (!allowed) return;
+    } else if (scanCount >= FREE_SCAN_LIMIT) {
       setShowPaywall(true);
       return;
     }
@@ -633,6 +690,9 @@ export default function HomeScreen() {
         allowsEditing: true,
         quality: 1,
       });
+      if (!result.canceled) {
+        await incrementGuestScanCount();
+      }
       await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen: Error launching camera:', error);
@@ -641,8 +701,12 @@ export default function HomeScreen() {
 
   const importFromGallery = async () => {
     setShowScanOptionsModal(false);
-    
-    if (scanCount >= FREE_SCAN_LIMIT) {
+    console.log('HomeScreen: User tapped Choose from Gallery');
+
+    if (!user) {
+      const allowed = await checkGuestScanLimit();
+      if (!allowed) return;
+    } else if (scanCount >= FREE_SCAN_LIMIT) {
       setShowPaywall(true);
       return;
     }
@@ -653,6 +717,9 @@ export default function HomeScreen() {
         allowsEditing: true,
         quality: 1,
       });
+      if (!result.canceled) {
+        await incrementGuestScanCount();
+      }
       await handleImageSelection(result);
     } catch (error) {
       console.error('HomeScreen: Error launching gallery:', error);
