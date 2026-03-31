@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.docuscan",
+      "bundleIdentifier": "com.nriznytska.docuscan",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "DocuScan uses your camera to photograph official letters for AI-powered analysis and translation into your language.",
