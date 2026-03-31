@@ -81,10 +81,10 @@ function RootLayoutNav() {
       return;
     }
 
-    // Priority 3: No user and not a guest but trying to access protected routes -> go to login
+    // Priority 3: No user and not a guest but trying to access protected routes -> go to signup
     if (!user && !isGuest && inAuthGroup) {
-      console.log('RootLayoutNav: No user and not a guest in protected route, redirecting to login');
-      router.replace('/login');
+      console.log('RootLayoutNav: No user and not a guest in protected route, redirecting to signup');
+      router.replace('/signup');
       return;
     }
   }, [user, loading, segments, router, hasLanguage, isGuest]);
