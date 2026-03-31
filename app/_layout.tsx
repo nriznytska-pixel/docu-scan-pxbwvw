@@ -72,6 +72,8 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === '(tabs)';
     const onLanguageSelect = segments[0] === 'language-select';
     const onSettings = segments[0] === 'settings';
+    const onLogin = segments[0] === 'login';
+    const onSignup = segments[0] === 'signup';
     
     console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'inAuthGroup:', inAuthGroup, 'hasLanguage:', hasLanguage, 'onSettings:', onSettings);
 
@@ -83,8 +85,8 @@ function RootLayoutNav() {
     }
 
     // Priority 2: User is logged in (or is a guest) and has language -> go to home
-    // Skip if already in tabs, on language-select, or on settings (settings handles its own post-logout nav)
-    if ((user || isGuest) && hasLanguage && !inAuthGroup && !onLanguageSelect && !onSettings) {
+    // Skip if already in tabs, on language-select, on settings, on login, or on signup
+    if ((user || isGuest) && hasLanguage && !inAuthGroup && !onLanguageSelect && !onSettings && !onLogin && !onSignup) {
       console.log('RootLayoutNav: User/guest with language, redirecting to home');
       router.replace('/(tabs)/(home)');
       return;

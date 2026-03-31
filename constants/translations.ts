@@ -369,6 +369,28 @@ export const translations = {
       fr: 'Déconnexion',
       es: 'Cerrar sesión',
     },
+    scanFirstLetter: {
+      en: 'Scan your first letter',
+      uk: 'Відскануйте свій перший лист',
+      nl: 'Scan uw eerste brief',
+      pl: 'Zeskanuj swój pierwszy list',
+      tr: 'İlk mektubunuzu tarayın',
+      de: 'Scannen Sie Ihren ersten Brief',
+      fr: 'Scannez votre première lettre',
+      es: 'Escanea tu primera carta',
+      ar: 'امسح رسالتك الأولى ضوئيًا',
+    },
+    takePhoto: {
+      en: 'Take a photo or import from gallery to analyze your documents',
+      uk: 'Зробіть фото або імпортуйте з галереї для аналізу документів',
+      nl: 'Maak een foto of importeer uit galerij om uw documenten te analyseren',
+      pl: 'Zrób zdjęcie lub zaimportuj z galerii, aby przeanalizować dokumenty',
+      tr: 'Belgelerinizi analiz etmek için fotoğraf çekin veya galeriden içe aktarın',
+      de: 'Machen Sie ein Foto oder importieren Sie aus der Galerie, um Ihre Dokumente zu analysieren',
+      fr: 'Prenez une photo ou importez depuis la galerie pour analyser vos documents',
+      es: 'Toma una foto o importa desde la galería para analizar tus documentos',
+      ar: 'التقط صورة أو استورد من المعرض لتحليل مستنداتك',
+    },
   },
   letterDetail: {
     title: {

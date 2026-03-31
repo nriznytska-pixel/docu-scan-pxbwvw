@@ -116,11 +116,9 @@ export default function LoginScreen() {
     try {
       await AsyncStorage.setItem('is_guest', 'true');
       console.log('LoginScreen: is_guest flag set to "true"');
-    } catch (err) {
-      console.error('LoginScreen: Failed to set is_guest flag:', err);
-    }
+    } catch {}
     console.log('LoginScreen: Navigating to home screen as guest');
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/(home)');
   };
 
   const titleText = translate('login', 'title', selectedLanguage);

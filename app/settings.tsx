@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/utils/supabase';
 
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
@@ -38,11 +39,14 @@ export default function SettingsScreen() {
   const confirmLogout = async () => {
     console.log('SettingsScreen: User confirmed logout');
     setShowLogoutModal(false);
+    try {
+      await supabase.auth.signOut();
+    } catch {}
     await AsyncStorage.removeItem('is_guest');
     await AsyncStorage.removeItem('guest_scan_count');
-    await signOut();
-    console.log('SettingsScreen: Logout complete, navigating directly to signup');
-    router.replace('/signup');
+    await AsyncStorage.removeItem('selectedLanguage');
+    console.log('SettingsScreen: Logout complete, navigating to language-select');
+    router.replace('/language-select');
   };
 
   const cancelLogout = () => {
