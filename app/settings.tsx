@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,6 @@ import { supabase } from '@/utils/supabase';
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
   
-  const router = useRouter();
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
   const { signOut, user } = useAuth();
   
@@ -41,20 +40,14 @@ export default function SettingsScreen() {
     console.log('SettingsScreen: User confirmed logout');
     setIsLoggingOut(true);
     setShowLogoutModal(false);
-
-    // Clear guest/cache data first
-    await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
-
-    // Navigate FIRST before signOut triggers auth state change in _layout
-    console.log('SettingsScreen: Navigating to login before signOut');
-    router.replace('/login');
-
-    // Then sign out (auth state change will happen after navigation)
     try {
+      await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
       await supabase.auth.signOut();
-      console.log('SettingsScreen: signOut complete');
+      console.log('SettingsScreen: signOut complete — auth guard will handle redirect');
     } catch (e) {
-      console.log('SettingsScreen: signOut error (ignored):', e);
+      console.log('SettingsScreen: signOut error:', e);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
