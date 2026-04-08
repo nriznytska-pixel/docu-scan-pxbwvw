@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -11,7 +10,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,10 +20,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
-  
+
+  const router = useRouter();
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
   const { signOut, user } = useAuth();
-  
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -43,9 +43,11 @@ export default function SettingsScreen() {
     try {
       await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
       await signOut();
-      console.log('SettingsScreen: signOut complete — auth guard will handle redirect');
+      console.log('SettingsScreen: signOut complete, navigating to login');
+      router.replace('/login');
     } catch (e) {
       console.log('SettingsScreen: signOut error:', e);
+      router.replace('/login');
     } finally {
       setIsLoggingOut(false);
     }
@@ -98,8 +100,8 @@ export default function SettingsScreen() {
         }}
       />
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
         >
