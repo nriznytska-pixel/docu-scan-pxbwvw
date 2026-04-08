@@ -81,7 +81,7 @@ export default function HomeScreen() {
   
   const router = useRouter();
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   
   console.log('HomeScreen: Current selectedLanguage from context:', selectedLanguage);
   
@@ -795,12 +795,6 @@ export default function HomeScreen() {
     setSelectedLanguage(lang);
   };
 
-  const handleSignOut = async () => {
-    console.log('HomeScreen: User tapped sign out');
-    setShowSettingsModal(false);
-    await signOut();
-  };
-
   const LANGUAGES = [
     { code: 'uk', label: 'Українська', flag: '🇺🇦' },
     { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -863,22 +857,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Top Bar */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            showCustomAlert(
-              'Sign Out?',
-              'Are you sure you want to sign out?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
-              ]
-            );
-          }}
-          style={styles.headerBackButton}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <IconSymbol ios_icon_name="arrow.left" android_material_icon_name="arrow-back" size={22} color="#475569" />
-        </TouchableOpacity>
+        <View style={styles.headerBackButton} />
         <Text style={styles.headerTitle}>{headerTitle}</Text>
         <TouchableOpacity
           onPress={handleSettingsPress}
@@ -1336,9 +1315,6 @@ export default function HomeScreen() {
               <Text style={styles.aboutDescription}>AI-powered letter assistant for newcomers in the Netherlands</Text>
             </View>
 
-            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.7}>
-              <Text style={styles.signOutButtonText}>Sign Out</Text>
-            </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
       </Modal>
