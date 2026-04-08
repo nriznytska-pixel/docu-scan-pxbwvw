@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -6,60 +6,20 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { useLanguage, LANGUAGES } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
 
-  const router = useRouter();
   const { selectedLanguage, setSelectedLanguage } = useLanguage();
-  const { signOut, user } = useAuth();
-
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   console.log('SettingsScreen: Current selectedLanguage:', selectedLanguage);
-  console.log('SettingsScreen: Current user:', user?.email || 'null');
-
-  const handleLogoutPress = () => {
-    console.log('SettingsScreen: User tapped logout button');
-    setShowLogoutModal(true);
-  };
-
-  const confirmLogout = async () => {
-    console.log('SettingsScreen: User confirmed logout - navigating first');
-    setShowLogoutModal(false);
-    setIsLoggingOut(true);
-
-    // Navigate FIRST, then clean up in background
-    router.replace('/login');
-
-    // Clean up auth state after navigation
-    try {
-      await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
-      await signOut();
-      console.log('SettingsScreen: signOut complete');
-    } catch (e) {
-      console.log('SettingsScreen: signOut error:', e);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  const cancelLogout = () => {
-    console.log('SettingsScreen: User cancelled logout');
-    setShowLogoutModal(false);
-  };
 
   const handleLanguageSelect = async (code: string) => {
     console.log('SettingsScreen: User selected language:', code);
@@ -68,11 +28,6 @@ export default function SettingsScreen() {
 
   const backButtonText = translate('settings', 'back', selectedLanguage);
   const screenTitle = translate('settings', 'title', selectedLanguage);
-  const logoutButtonText = translate('settings', 'logout', selectedLanguage);
-  const logoutModalTitle = translate('settings', 'logoutModalTitle', selectedLanguage);
-  const logoutModalMessage = translate('settings', 'logoutModalMessage', selectedLanguage);
-  const cancelButtonText = translate('settings', 'cancel', selectedLanguage);
-  const confirmLogoutButtonText = translate('settings', 'logout', selectedLanguage);
 
   const appVersion = Constants.expoConfig?.version || '1.0.0';
 
@@ -147,48 +102,8 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
-
-          {/* Logout Section */}
-          <View style={styles.logoutSection}>
-            <TouchableOpacity
-              style={[styles.logoutButton, isLoggingOut && { opacity: 0.6 }]}
-              onPress={handleLogoutPress}
-              activeOpacity={0.8}
-              disabled={isLoggingOut}
-            >
-              <Text style={styles.logoutButtonText}>{isLoggingOut ? 'Signing out...' : logoutButtonText}</Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       </SafeAreaView>
-
-      <Modal
-        visible={showLogoutModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={cancelLogout}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{logoutModalTitle}</Text>
-            <Text style={styles.modalMessage}>{logoutModalMessage}</Text>
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={styles.modalCancelButton}
-                onPress={cancelLogout}
-              >
-                <Text style={styles.modalCancelButtonText}>{cancelButtonText}</Text>
-              </Pressable>
-              <Pressable
-                style={styles.modalConfirmButton}
-                onPress={confirmLogout}
-              >
-                <Text style={styles.modalConfirmButtonText}>{confirmLogoutButtonText}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -279,98 +194,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#0F172A',
-  },
-  logoutSection: {
-    marginTop: 32,
-    paddingTop: 24,
-  },
-  logoutButton: {
-    backgroundColor: '#DC2626',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  modalMessage: {
-    fontSize: 14,
-    color: '#475569',
-    marginBottom: 24,
-    textAlign: 'center',
-    lineHeight: 22.4,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  modalCancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(15,23,42,0.06)',
-  },
-  modalCancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  modalConfirmButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: '#DC2626',
-    alignItems: 'center',
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  modalConfirmButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 });
