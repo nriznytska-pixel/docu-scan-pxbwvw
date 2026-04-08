@@ -93,7 +93,7 @@ function RootLayoutNav() {
     }
 
     // Priority 3: No user and not a guest but trying to access protected routes -> go to signup
-    if (!user && !isGuest && inAuthGroup) {
+    if (!user && !isGuest && (inAuthGroup || onSettings)) {
       console.log('RootLayoutNav: No user and not a guest in protected route, redirecting to signup');
       router.replace('/signup');
       return;
