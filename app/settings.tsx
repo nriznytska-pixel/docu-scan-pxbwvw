@@ -8,6 +8,7 @@ import {
   ScrollView,
   Platform,
   Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -17,7 +18,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { translate } from '@/constants/translations';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/utils/supabase';
 
 export default function SettingsScreen() {
   console.log('SettingsScreen: Component rendered');
@@ -42,7 +42,7 @@ export default function SettingsScreen() {
     setShowLogoutModal(false);
     try {
       await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
-      await supabase.auth.signOut();
+      await signOut();
       console.log('SettingsScreen: signOut complete — auth guard will handle redirect');
     } catch (e) {
       console.log('SettingsScreen: signOut error:', e);
@@ -155,37 +155,35 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
+      </SafeAreaView>
 
-        <Modal
-          visible={showLogoutModal}
-          animationType="fade"
-          transparent={true}
-          onRequestClose={cancelLogout}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>{logoutModalTitle}</Text>
-              <Text style={styles.modalMessage}>{logoutModalMessage}</Text>
-              <View style={styles.modalButtons}>
-                <TouchableOpacity 
-                  style={styles.modalCancelButton} 
-                  onPress={cancelLogout}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.modalCancelButtonText}>{cancelButtonText}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.modalConfirmButton} 
-                  onPress={confirmLogout}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.modalConfirmButtonText}>{confirmLogoutButtonText}</Text>
-                </TouchableOpacity>
-              </View>
+      <Modal
+        visible={showLogoutModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelLogout}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{logoutModalTitle}</Text>
+            <Text style={styles.modalMessage}>{logoutModalMessage}</Text>
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={styles.modalCancelButton}
+                onPress={cancelLogout}
+              >
+                <Text style={styles.modalCancelButtonText}>{cancelButtonText}</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalConfirmButton}
+                onPress={confirmLogout}
+              >
+                <Text style={styles.modalConfirmButtonText}>{confirmLogoutButtonText}</Text>
+              </Pressable>
             </View>
           </View>
-        </Modal>
-      </SafeAreaView>
+        </View>
+      </Modal>
     </>
   );
 }
