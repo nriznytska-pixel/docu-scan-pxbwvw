@@ -37,17 +37,20 @@ export default function SettingsScreen() {
   };
 
   const confirmLogout = async () => {
-    console.log('SettingsScreen: User confirmed logout');
-    setIsLoggingOut(true);
+    console.log('SettingsScreen: User confirmed logout - navigating first');
     setShowLogoutModal(false);
+    setIsLoggingOut(true);
+
+    // Navigate FIRST, then clean up in background
+    router.replace('/login');
+
+    // Clean up auth state after navigation
     try {
       await AsyncStorage.multiRemove(['is_guest', 'guest_scan_count']);
       await signOut();
-      console.log('SettingsScreen: signOut complete, navigating to login');
-      router.replace('/login');
+      console.log('SettingsScreen: signOut complete');
     } catch (e) {
       console.log('SettingsScreen: signOut error:', e);
-      router.replace('/login');
     } finally {
       setIsLoggingOut(false);
     }
