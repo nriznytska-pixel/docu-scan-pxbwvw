@@ -134,11 +134,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [selectedLanguage, isLoading]);
 
-  if (isLoading) {
-    console.log('LanguageContext: ⏳ Still loading...');
-    return null;
-  }
-
   console.log('LanguageContext: ✅ Provider rendering with language:', selectedLanguage);
 
   return (
