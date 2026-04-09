@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -29,6 +30,8 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -78,7 +81,7 @@ export default function SignupScreen() {
 
   const goToLogin = () => {
     console.log('SignupScreen: User tapped back button / sign in link');
-    router.back();
+    router.replace('/login');
   };
 
   const handleContinueAsGuest = async () => {
@@ -135,29 +138,61 @@ export default function SignupScreen() {
               editable={!loading}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder={passwordPlaceholder}
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="password"
-              editable={!loading}
-            />
+            <View style={styles.passwordWrapper}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder={passwordPlaceholder}
+                placeholderTextColor={colors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!passwordVisible}
+                autoCapitalize="none"
+                autoComplete="password"
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => {
+                  console.log('SignupScreen: Password visibility toggled to', !passwordVisible ? 'visible' : 'hidden');
+                  setPasswordVisible(!passwordVisible);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={passwordVisible ? 'eye' : 'eye-off'}
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder={confirmPasswordPlaceholder}
-              placeholderTextColor={colors.textSecondary}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="password"
-              editable={!loading}
-            />
+            <View style={styles.passwordWrapper}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder={confirmPasswordPlaceholder}
+                placeholderTextColor={colors.textSecondary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!confirmPasswordVisible}
+                autoCapitalize="none"
+                autoComplete="password"
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => {
+                  console.log('SignupScreen: Confirm password visibility toggled to', !confirmPasswordVisible ? 'visible' : 'hidden');
+                  setConfirmPasswordVisible(!confirmPasswordVisible);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={confirmPasswordVisible ? 'eye' : 'eye-off'}
+                  size={22}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -242,6 +277,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginBottom: 16,
+  },
+  passwordWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  passwordInput: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingRight: 52,
+    fontSize: 16,
+    color: colors.text,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
   },
   errorText: {
     color: colors.error,

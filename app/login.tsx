@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/styles/commonStyles';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,6 +29,7 @@ export default function LoginScreen() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -169,20 +171,36 @@ export default function LoginScreen() {
               editable={!loading}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder={passwordPlaceholder}
-              placeholderTextColor="#888888"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setError('');
-              }}
-              secureTextEntry
-              autoCapitalize="none"
-              autoComplete="password"
-              editable={!loading}
-            />
+            <View style={styles.passwordWrapper}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder={passwordPlaceholder}
+                placeholderTextColor="#888888"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setError('');
+                }}
+                secureTextEntry={!passwordVisible}
+                autoCapitalize="none"
+                autoComplete="password"
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => {
+                  console.log('LoginScreen: Password visibility toggled to', !passwordVisible ? 'visible' : 'hidden');
+                  setPasswordVisible(!passwordVisible);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={passwordVisible ? 'eye' : 'eye-off'}
+                  size={22}
+                  color="#888888"
+                />
+              </TouchableOpacity>
+            </View>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -285,6 +303,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginBottom: 16,
+  },
+  passwordWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  passwordInput: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingRight: 52,
+    fontSize: 16,
+    color: colors.text,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
   },
   errorText: {
     color: colors.error,
