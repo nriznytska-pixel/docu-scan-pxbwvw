@@ -24,7 +24,7 @@ export default function LoginScreen() {
   console.log('LoginScreen: Component rendered');
   
   const router = useRouter();
-  const { signIn, user } = useAuth();
+  const { signIn, user, setGuestMode } = useAuth();
   const { selectedLanguage, refreshLanguage } = useLanguage();
   
   const [email, setEmail] = useState('');
@@ -115,13 +115,8 @@ export default function LoginScreen() {
 
   const handleContinueAsGuest = async () => {
     console.log('LoginScreen: User tapped "Continue without account"');
-    try {
-      await AsyncStorage.setItem('is_guest', 'true');
-      console.log('LoginScreen: is_guest flag set to "true"');
-    } catch (err) {
-      console.error('LoginScreen: Failed to set is_guest flag:', err);
-    }
-    console.log('LoginScreen: Navigating to /(tabs) as guest');
+    await setGuestMode(true);
+    console.log('LoginScreen: Guest mode set, navigating to /(tabs)');
     router.replace('/(tabs)');
   };
 

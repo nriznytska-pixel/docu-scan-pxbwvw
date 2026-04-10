@@ -22,26 +22,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
 
 function RootLayoutNav() {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const [hasLanguage, setHasLanguage] = useState<boolean | null>(null);
-  const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
   const checkLanguageSelection = async () => {
     try {
-      const [savedLanguage, guestFlag] = await Promise.all([
-        AsyncStorage.getItem(LANGUAGE_STORAGE_KEY),
-        AsyncStorage.getItem('is_guest'),
-      ]);
+      const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
       console.log('RootLayoutNav: Checking language selection:', savedLanguage);
-      console.log('RootLayoutNav: Checking guest flag:', guestFlag);
       setHasLanguage(!!savedLanguage);
-      setIsGuest(guestFlag === 'true');
     } catch (error) {
-      console.error('RootLayoutNav: Error checking language/guest:', error);
+      console.error('RootLayoutNav: Error checking language:', error);
       setHasLanguage(false);
-      setIsGuest(false);
     }
   };
 
@@ -50,21 +43,8 @@ function RootLayoutNav() {
   }, []);
 
   useEffect(() => {
-    if (segments[0] === 'login' || segments[0] === 'signup') {
-      checkLanguageSelection();
-    }
-  }, [segments]);
-
-  useEffect(() => {
-    if (user === null) {
-      console.log('RootLayoutNav: user signed out, re-reading AsyncStorage to refresh isGuest');
-      checkLanguageSelection();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (loading || hasLanguage === null || isGuest === null) {
-      console.log('RootLayoutNav: Auth or language or guest loading, waiting...');
+    if (loading || hasLanguage === null) {
+      console.log('RootLayoutNav: Auth or language loading, waiting...');
       return;
     }
 
@@ -73,8 +53,8 @@ function RootLayoutNav() {
     const onSettings = segments[0] === 'settings';
     const onLogin = segments[0] === 'login';
     const onSignup = segments[0] === 'signup';
-    
-    console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'inAuthGroup:', inAuthGroup, 'hasLanguage:', hasLanguage, 'onSettings:', onSettings);
+
+    console.log('RootLayoutNav: Auth check - user:', user?.email || 'null', 'isGuest:', isGuest, 'inAuthGroup:', inAuthGroup, 'hasLanguage:', hasLanguage);
 
     // Priority 1: No language selected -> go to language selection
     if (!hasLanguage && !onLanguageSelect) {
@@ -83,10 +63,10 @@ function RootLayoutNav() {
       return;
     }
 
-    // Priority 2: User is logged in (or is a guest) and has language -> go to home
-    // Skip if already in tabs, on language-select, on settings, on login, or on signup
-    if ((user || isGuest) && hasLanguage && !inAuthGroup && !onLanguageSelect && !onSettings && !onLogin && !onSignup) {
-      console.log('RootLayoutNav: User/guest with language, redirecting to home');
+    // Priority 2: Authenticated or guest user with language -> go to home
+    // Only redirect if currently on an auth screen (login/signup), not if already in tabs/settings
+    if ((user || isGuest) && hasLanguage && (onLogin || onSignup)) {
+      console.log('RootLayoutNav: User/guest with language on auth screen, redirecting to home');
       router.replace('/(tabs)/(home)');
       return;
     }
@@ -97,7 +77,7 @@ function RootLayoutNav() {
       router.replace('/signup');
       return;
     }
-  }, [user, loading, segments, router, hasLanguage, isGuest]);
+  }, [user, loading, isGuest, segments, router, hasLanguage]);
 
   return (
     <Stack
